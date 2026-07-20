@@ -13,6 +13,13 @@
 #
 # Claude Code specific, same as molt-session-start.sh: does nothing for
 # Cursor, Copilot, or any other tool.
+#
+# Found by adversarial testing of this hook itself, not by inspection: if
+# molt-verify.py crashes, or python3 isn't on PATH, there's no VERDICT line
+# to parse, and the original "only warn on DRIFT DETECTED" check silently
+# printed nothing at all, the same false-confidence gap as the start hook,
+# just silent instead of falsely reassuring. An empty/missing VERDICT now
+# gets its own explicit warning too.
 
 ROOT="${CLAUDE_PROJECT_DIR:-.}"
 VERIFY="$ROOT/molt-verify.py"
@@ -22,9 +29,12 @@ if [ ! -f "$VERIFY" ]; then
 fi
 
 OUTPUT=$(python3 "$VERIFY" --no-color "$ROOT" 2>&1)
+STATUS=$?
 VERDICT=$(echo "$OUTPUT" | grep -m1 "^VERDICT:")
 
-if echo "$VERDICT" | grep -q "DRIFT DETECTED"; then
+if [ -z "$VERDICT" ]; then
+  echo "molt: could not verify memory at session end -- molt-verify.py exited $STATUS with no VERDICT line (it may have crashed, or python3 isn't available). Run 'python3 molt-verify.py' before your next session." >&2
+elif echo "$VERDICT" | grep -q "DRIFT DETECTED"; then
   echo "molt: $VERDICT at session end -- something in memory/ is inconsistent. Run 'python3 molt-verify.py' before your next session." >&2
 fi
 

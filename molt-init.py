@@ -1335,20 +1335,33 @@ ZXRoaW5nIGxvb2tzIHdyb25nLgojCiMgQ2xhdWRlIENvZGUgc3BlY2lmaWM6IHRoaXMgaG9vayBk
 b2VzIG5vdGhpbmcgZm9yIEN1cnNvciwgQ29waWxvdCwgb3IgYW55CiMgb3RoZXIgdG9vbCwgc2lu
 Y2Ugbm9uZSBvZiB0aGVtIHJ1biBDbGF1ZGUgQ29kZSdzIGhvb2sgbGlmZWN5Y2xlLiBJdCdzIGFu
 CiMgb3B0aW9uYWwgYm9udXMgZm9yIENsYXVkZSBDb2RlIHVzZXJzLCBub3QgcGFydCBvZiBNb2x0
-J3MgY29yZSwgdG9vbC0KIyBhZ25vc3RpYyBndWFyYW50ZWUuCgpST09UPSIke0NMQVVERV9QUk9K
-RUNUX0RJUjotLn0iClZFUklGWT0iJFJPT1QvbW9sdC12ZXJpZnkucHkiCgppZiBbICEgLWYgIiRW
-RVJJRlkiIF07IHRoZW4KICBleGl0IDAgICMgbm90IGEgTW9sdCBwcm9qZWN0IChvciBtb2x0LXZl
-cmlmeS5weSB3YXMgbW92ZWQvcmVtb3ZlZCkgLS0gc3RheSBzaWxlbnQKZmkKCk9VVFBVVD0kKHB5
-dGhvbjMgIiRWRVJJRlkiIC0tbm8tY29sb3IgIiRST09UIiAyPiYxKQpWRVJESUNUPSQoZWNobyAi
-JE9VVFBVVCIgfCBncmVwIC1tMSAiXlZFUkRJQ1Q6IikKCmlmIGVjaG8gIiRWRVJESUNUIiB8IGdy
-ZXAgLXEgIkRSSUZUIERFVEVDVEVEIjsgdGhlbgogIGVjaG8gIk1PTFQ6ICRWRVJESUNUIC0tIG1l
-bW9yeS9kZWNpc2lvbnMubWQgYW5kIG1lbW9yeS9JTkRFWC5tZCBkaXNhZ3JlZSwgb3IgYW5vdGhl
-ciBjaGVjayBmYWlsZWQuIERvIG5vdCB0cmVhdCBtZW1vcnkvIGFzIHRydXN0d29ydGh5IHVudGls
-IHRoaXMgaXMgZml4ZWQuIFJ1biAncHl0aG9uMyBtb2x0LXZlcmlmeS5weScgZm9yIHRoZSBmdWxs
-IHJlcG9ydCBiZWZvcmUgcmVseWluZyBvbiBhbnkgcGFzdCBkZWNpc2lvbi4iCmVsc2UKICBlY2hv
-ICJNT0xUOiAkVkVSRElDVCAtLSBtZW1vcnkgdmVyaWZpZWQgYXQgc2Vzc2lvbiBzdGFydCwgc2Fm
-ZSB0byByZWFkIG1lbW9yeS9JTkRFWC5tZCBhbmQgbWVtb3J5L2RlY2lzaW9ucy5tZCBhcy1pcy4i
-CmZpCgpleGl0IDAK
+J3MgY29yZSwgdG9vbC0KIyBhZ25vc3RpYyBndWFyYW50ZWUuCiMKIyBGb3VuZCBieSBhZHZlcnNh
+cmlhbCB0ZXN0aW5nIG9mIHRoaXMgaG9vayBpdHNlbGYsIG5vdCBieSBpbnNwZWN0aW9uOiBpZgoj
+IG1vbHQtdmVyaWZ5LnB5IGNyYXNoZXMsIG9yIHB5dGhvbjMgaXNuJ3Qgb24gUEFUSCwgdGhlcmUn
+cyBubyBWRVJESUNUIGxpbmUKIyB0byBwYXJzZSwgYW5kIGEgbmFpdmUgImVsc2UgLT4gdHJ1c3R3
+b3J0aHkiIGJyYW5jaCBzaWxlbnRseSByZXBvcnRzCiMgZXZlcnl0aGluZyBpcyBmaW5lIHdoZW4g
+aXQgaGFzIG5vIGlkZWEgd2hldGhlciB0aGF0J3MgdHJ1ZS4gVGhhdCdzCiMgZXhhY3RseSB0aGUg
+ZmFpbHVyZSBtb2RlIE1vbHQgZXhpc3RzIHRvIGNhdGNoLCBzbyBhbiBlbXB0eS9taXNzaW5nCiMg
+VkVSRElDVCBpcyBpdHMgb3duIGV4cGxpY2l0LCB1bmFtYmlndW91cyBjYXNlIGJlbG93LCBub3Qg
+YSBmYWxsdGhyb3VnaC4KClJPT1Q9IiR7Q0xBVURFX1BST0pFQ1RfRElSOi0ufSIKVkVSSUZZPSIk
+Uk9PVC9tb2x0LXZlcmlmeS5weSIKCmlmIFsgISAtZiAiJFZFUklGWSIgXTsgdGhlbgogIGV4aXQg
+MCAgIyBub3QgYSBNb2x0IHByb2plY3QgKG9yIG1vbHQtdmVyaWZ5LnB5IHdhcyBtb3ZlZC9yZW1v
+dmVkKSAtLSBzdGF5IHNpbGVudApmaQoKT1VUUFVUPSQocHl0aG9uMyAiJFZFUklGWSIgLS1uby1j
+b2xvciAiJFJPT1QiIDI+JjEpClNUQVRVUz0kPwpWRVJESUNUPSQoZWNobyAiJE9VVFBVVCIgfCBn
+cmVwIC1tMSAiXlZFUkRJQ1Q6IikKCmlmIFsgLXogIiRWRVJESUNUIiBdOyB0aGVuCiAgZWNobyAi
+TU9MVDogY291bGQgbm90IHZlcmlmeSBtZW1vcnkgLS0gbW9sdC12ZXJpZnkucHkgZXhpdGVkICRT
+VEFUVVMgd2l0aCBubyBWRVJESUNUIGxpbmUgKGl0IG1heSBoYXZlIGNyYXNoZWQsIG9yIHB5dGhv
+bjMgaXNuJ3QgYXZhaWxhYmxlKS4gRG8gbm90IHRyZWF0IG1lbW9yeS8gYXMgdHJ1c3R3b3J0aHkg
+dW50aWwgdGhpcyBpcyB1bmRlcnN0b29kLiBMYXN0IG91dHB1dDogJChlY2hvICIkT1VUUFVUIiB8
+IHRhaWwgLTMgfCB0ciAnXG4nICcgJykiCmVsaWYgZWNobyAiJFZFUkRJQ1QiIHwgZ3JlcCAtcSAi
+RFJJRlQgREVURUNURUQiOyB0aGVuCiAgZWNobyAiTU9MVDogJFZFUkRJQ1QgLS0gbWVtb3J5L2Rl
+Y2lzaW9ucy5tZCBhbmQgbWVtb3J5L0lOREVYLm1kIGRpc2FncmVlLCBvciBhbm90aGVyIGNoZWNr
+IGZhaWxlZC4gRG8gbm90IHRyZWF0IG1lbW9yeS8gYXMgdHJ1c3R3b3J0aHkgdW50aWwgdGhpcyBp
+cyBmaXhlZC4gUnVuICdweXRob24zIG1vbHQtdmVyaWZ5LnB5JyBmb3IgdGhlIGZ1bGwgcmVwb3J0
+IGJlZm9yZSByZWx5aW5nIG9uIGFueSBwYXN0IGRlY2lzaW9uLiIKZWxzZQogIGVjaG8gIk1PTFQ6
+ICRWRVJESUNUIC0tIG1lbW9yeSB2ZXJpZmllZCBhdCBzZXNzaW9uIHN0YXJ0LCBzYWZlIHRvIHJl
+YWQgbWVtb3J5L0lOREVYLm1kIGFuZCBtZW1vcnkvZGVjaXNpb25zLm1kIGFzLWlzLiIKZmkKCmV4
+aXQgMAo=
 """
 
 SESSION_END_HOOK_B64 = """
@@ -1365,14 +1378,25 @@ aGlzIGlzIHB1cmVseSBhCiMgaGVhZHMtdXAgdG8gdGhlIHBlcnNvbiBhdCB0aGUga2V5Ym9hcmQs
 IHdyaXR0ZW4gdG8gc3RkZXJyLCBub3QgYQojIG1lY2hhbmlzbSB0aGUgYWdlbnQgY2FuIHJlYWN0
 IHRvLgojCiMgQ2xhdWRlIENvZGUgc3BlY2lmaWMsIHNhbWUgYXMgbW9sdC1zZXNzaW9uLXN0YXJ0
 LnNoOiBkb2VzIG5vdGhpbmcgZm9yCiMgQ3Vyc29yLCBDb3BpbG90LCBvciBhbnkgb3RoZXIgdG9v
-bC4KClJPT1Q9IiR7Q0xBVURFX1BST0pFQ1RfRElSOi0ufSIKVkVSSUZZPSIkUk9PVC9tb2x0LXZl
-cmlmeS5weSIKCmlmIFsgISAtZiAiJFZFUklGWSIgXTsgdGhlbgogIGV4aXQgMApmaQoKT1VUUFVU
-PSQocHl0aG9uMyAiJFZFUklGWSIgLS1uby1jb2xvciAiJFJPT1QiIDI+JjEpClZFUkRJQ1Q9JChl
-Y2hvICIkT1VUUFVUIiB8IGdyZXAgLW0xICJeVkVSRElDVDoiKQoKaWYgZWNobyAiJFZFUkRJQ1Qi
-IHwgZ3JlcCAtcSAiRFJJRlQgREVURUNURUQiOyB0aGVuCiAgZWNobyAibW9sdDogJFZFUkRJQ1Qg
-YXQgc2Vzc2lvbiBlbmQgLS0gc29tZXRoaW5nIGluIG1lbW9yeS8gaXMgaW5jb25zaXN0ZW50LiBS
-dW4gJ3B5dGhvbjMgbW9sdC12ZXJpZnkucHknIGJlZm9yZSB5b3VyIG5leHQgc2Vzc2lvbi4iID4m
-MgpmaQoKZXhpdCAwCg==
+bC4KIwojIEZvdW5kIGJ5IGFkdmVyc2FyaWFsIHRlc3Rpbmcgb2YgdGhpcyBob29rIGl0c2VsZiwg
+bm90IGJ5IGluc3BlY3Rpb246IGlmCiMgbW9sdC12ZXJpZnkucHkgY3Jhc2hlcywgb3IgcHl0aG9u
+MyBpc24ndCBvbiBQQVRILCB0aGVyZSdzIG5vIFZFUkRJQ1QgbGluZQojIHRvIHBhcnNlLCBhbmQg
+dGhlIG9yaWdpbmFsICJvbmx5IHdhcm4gb24gRFJJRlQgREVURUNURUQiIGNoZWNrIHNpbGVudGx5
+CiMgcHJpbnRlZCBub3RoaW5nIGF0IGFsbCwgdGhlIHNhbWUgZmFsc2UtY29uZmlkZW5jZSBnYXAg
+YXMgdGhlIHN0YXJ0IGhvb2ssCiMganVzdCBzaWxlbnQgaW5zdGVhZCBvZiBmYWxzZWx5IHJlYXNz
+dXJpbmcuIEFuIGVtcHR5L21pc3NpbmcgVkVSRElDVCBub3cKIyBnZXRzIGl0cyBvd24gZXhwbGlj
+aXQgd2FybmluZyB0b28uCgpST09UPSIke0NMQVVERV9QUk9KRUNUX0RJUjotLn0iClZFUklGWT0i
+JFJPT1QvbW9sdC12ZXJpZnkucHkiCgppZiBbICEgLWYgIiRWRVJJRlkiIF07IHRoZW4KICBleGl0
+IDAKZmkKCk9VVFBVVD0kKHB5dGhvbjMgIiRWRVJJRlkiIC0tbm8tY29sb3IgIiRST09UIiAyPiYx
+KQpTVEFUVVM9JD8KVkVSRElDVD0kKGVjaG8gIiRPVVRQVVQiIHwgZ3JlcCAtbTEgIl5WRVJESUNU
+OiIpCgppZiBbIC16ICIkVkVSRElDVCIgXTsgdGhlbgogIGVjaG8gIm1vbHQ6IGNvdWxkIG5vdCB2
+ZXJpZnkgbWVtb3J5IGF0IHNlc3Npb24gZW5kIC0tIG1vbHQtdmVyaWZ5LnB5IGV4aXRlZCAkU1RB
+VFVTIHdpdGggbm8gVkVSRElDVCBsaW5lIChpdCBtYXkgaGF2ZSBjcmFzaGVkLCBvciBweXRob24z
+IGlzbid0IGF2YWlsYWJsZSkuIFJ1biAncHl0aG9uMyBtb2x0LXZlcmlmeS5weScgYmVmb3JlIHlv
+dXIgbmV4dCBzZXNzaW9uLiIgPiYyCmVsaWYgZWNobyAiJFZFUkRJQ1QiIHwgZ3JlcCAtcSAiRFJJ
+RlQgREVURUNURUQiOyB0aGVuCiAgZWNobyAibW9sdDogJFZFUkRJQ1QgYXQgc2Vzc2lvbiBlbmQg
+LS0gc29tZXRoaW5nIGluIG1lbW9yeS8gaXMgaW5jb25zaXN0ZW50LiBSdW4gJ3B5dGhvbjMgbW9s
+dC12ZXJpZnkucHknIGJlZm9yZSB5b3VyIG5leHQgc2Vzc2lvbi4iID4mMgpmaQoKZXhpdCAwCg==
 """
 
 EMBEDS = {
@@ -1521,56 +1545,77 @@ def decode_embed(b64_text):
     return base64.b64decode("".join(b64_text.split()))
 
 
+# Found by adversarial testing of molt-init.py itself, not by inspection:
+# every write helper below used to let a bare OSError/PermissionError (an
+# unwritable target directory, a read-only filesystem, a permissions
+# mismatch) crash the whole script with a raw Python traceback -- zero
+# files reported, no indication of what did or didn't get created, exactly
+# the kind of silent-until-it-explodes failure this project exists to
+# avoid elsewhere. Every helper now catches OSError and reports "failed:
+# <reason>" like any other status, so one unwritable location doesn't take
+# the whole run down with it, and the final report stays honest either way.
 def write_embed_if_absent(rel_path, b64_text, target, force):
     dst = os.path.join(target, rel_path)
     if os.path.isfile(dst) and not force:
         return "skipped (already exists)"
-    os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
-    data = decode_embed(b64_text)
-    with open(dst, "wb") as f:
-        f.write(data)
-    if rel_path in EXECUTABLE_EMBEDS:
-        st = os.stat(dst)
-        os.chmod(dst, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    try:
+        os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
+        data = decode_embed(b64_text)
+        with open(dst, "wb") as f:
+            f.write(data)
+        if rel_path in EXECUTABLE_EMBEDS:
+            st = os.stat(dst)
+            os.chmod(dst, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    except OSError as e:
+        return "failed: %s" % e
     return "created"
 
 
 def write_if_absent(path, content, force):
     if os.path.isfile(path) and not force:
         return "skipped (already exists)"
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content)
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+    except OSError as e:
+        return "failed: %s" % e
     return "created"
 
 
 def ensure_gitignore(target, force):
     path = os.path.join(target, ".gitignore")
     needed = ("CLAUDE.local.md", "AGENTS.local.md")
-    if not os.path.isfile(path):
-        with open(path, "w", encoding="utf-8") as f:
-            f.write("\n".join(needed) + "\n")
-        return "created"
-    text = open(path, encoding="utf-8").read()
-    missing = [n for n in needed if n not in text]
-    if not missing:
-        return "already protects CLAUDE.local.md/AGENTS.local.md"
-    with open(path, "a", encoding="utf-8") as f:
-        f.write("\n" + "\n".join(missing) + "\n")
+    try:
+        if not os.path.isfile(path):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("\n".join(needed) + "\n")
+            return "created"
+        text = open(path, encoding="utf-8").read()
+        missing = [n for n in needed if n not in text]
+        if not missing:
+            return "already protects CLAUDE.local.md/AGENTS.local.md"
+        with open(path, "a", encoding="utf-8") as f:
+            f.write("\n" + "\n".join(missing) + "\n")
+    except OSError as e:
+        return "failed: %s" % e
     return "appended %s" % ", ".join(missing)
 
 
 def ensure_gitattributes(target, force):
     path = os.path.join(target, ".gitattributes")
-    if not os.path.isfile(path):
-        with open(path, "w", encoding="utf-8") as f:
+    try:
+        if not os.path.isfile(path):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(GITATTRIBUTES_ADDITION)
+            return "created (union-merge for memory/decisions.md, see decision log)"
+        text = open(path, encoding="utf-8").read()
+        if "memory/decisions.md" in text:
+            return "already configured"
+        with open(path, "a", encoding="utf-8") as f:
             f.write(GITATTRIBUTES_ADDITION)
-        return "created (union-merge for memory/decisions.md, see decision log)"
-    text = open(path, encoding="utf-8").read()
-    if "memory/decisions.md" in text:
-        return "already configured"
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(GITATTRIBUTES_ADDITION)
+    except OSError as e:
+        return "failed: %s" % e
     return "appended union-merge rule for memory/decisions.md"
 
 
@@ -1631,16 +1676,27 @@ def ensure_claude_hooks_settings(target, force):
                 "SessionEnd": [MOLT_HOOK_ENTRY_END],
             }
         }
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-            f.write("\n")
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+                f.write("\n")
+        except OSError as e:
+            return "failed: %s" % e
         return "created (registers Molt's SessionStart/SessionEnd hooks)"
 
     try:
-        with open(path, encoding="utf-8") as f:
+        # utf-8-sig transparently strips a leading UTF-8 BOM if one is present
+        # (common from Windows editors) and behaves exactly like utf-8
+        # otherwise -- this is not guessing at a repair, a BOM isn't JSON
+        # content, so stripping it can't change meaning. A real syntax error
+        # (a trailing comma, unbalanced braces) still correctly falls through
+        # to the skip below; that one really would be guessing.
+        with open(path, encoding="utf-8-sig") as f:
             data = json.load(f)
-    except (ValueError, OSError):
+    except OSError as e:
+        return "failed: %s" % e
+    except ValueError:
         return "skipped (existing .claude/settings.json is not valid JSON, not touching it)"
 
     if not isinstance(data, dict):
@@ -1669,9 +1725,12 @@ def ensure_claude_hooks_settings(target, force):
     if not changed:
         return "already registered"
 
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+    except OSError as e:
+        return "failed: %s" % e
     return "merged into existing file (added %s)" % ", ".join(changed)
 
 
@@ -1706,8 +1765,15 @@ def main(argv):
     # entirely avoidable. Found by testing this exact scenario, not by
     # inspection.
     claude_md_path = os.path.join(target, "CLAUDE.md")
-    actual_claude_md = open(claude_md_path, encoding="utf-8").read()
-    report.append(("AGENTS.md", write_if_absent(os.path.join(target, "AGENTS.md"), actual_claude_md, force)))
+    # If CLAUDE.md's own write failed above (e.g. an unwritable target),
+    # there's nothing on disk to mirror into AGENTS.md yet -- report that
+    # plainly instead of crashing on a read of a file that was never
+    # created. Found by testing an unwritable-target scenario directly.
+    if os.path.isfile(claude_md_path):
+        actual_claude_md = open(claude_md_path, encoding="utf-8").read()
+        report.append(("AGENTS.md", write_if_absent(os.path.join(target, "AGENTS.md"), actual_claude_md, force)))
+    else:
+        report.append(("AGENTS.md", "skipped (CLAUDE.md was not written, nothing to mirror)"))
     report.append(("memory/INDEX.md", write_if_absent(os.path.join(target, "memory", "INDEX.md"), INDEX_MD_TEMPLATE, force)))
     report.append(("memory/decisions.md", write_if_absent(os.path.join(target, "memory", "decisions.md"), DECISIONS_MD_TEMPLATE, force)))
     report.append(("memory/handoffs/TEMPLATE.md", write_if_absent(os.path.join(target, "memory", "handoffs", "TEMPLATE.md"), HANDOFF_TEMPLATE_MD, force)))

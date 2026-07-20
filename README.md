@@ -122,9 +122,9 @@ While building Molt, a hand-copied backup of the decision log picked up a senten
 | Setup cost | none | a database or paid service | **one command, no dependencies** |
 | Can prove it isn't lying to you | no | no | **yes** |
 | Tested against fake corruption | no | rarely | **yes, 43 cases, two scales** |
-| Built for thousands of autonomous agents | no | **yes** | no |
+| Built for thousands of autonomous agents | no | **yes** | not the goal |
 
-That last row is honest, not modest: for a huge fleet of autonomous agents, use a real database-backed system. For individuals, small teams, and startups who want memory they can actually read and trust, this is built for exactly that.
+That last row is honest, not modest: for a huge fleet of autonomous agents, use a real database-backed system. Adding one would mean giving up the zero dependencies and plain markdown files that make the rest of this table true. For individuals, small teams, and startups who want memory they can actually read and trust, this is built for exactly that. The fuller reasoning, including where the line actually gets drawn against tools that do chase that scale, is in [SCALE-SPEC.md](SCALE-SPEC.md).
 
 ## Works with whatever you already use
 

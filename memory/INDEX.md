@@ -9,6 +9,7 @@ reading `decisions.md` top to bottom by default. (Progressive disclosure; see
 
 | Date | Type | Title | Gist | ~tokens |
 |---|---|---|---|---|
+| 2026-07-20 | build | Reframed the one honest weakness row in README's comparison table, instead of hiding it | Changed a flat "no" to "not the goal," explained the tradeoff directly, linked SCALE-SPEC.md for the deeper reasoning; nothing softened or removed. | ~330 |
 | 2026-07-20 | build | Made README.md explicit that Molt is for existing setups too, not only fresh ones | Added a line and a paragraph covering people already mid-use; the non-destructive install behavior was already true, just now stated as a selling point. | ~310 |
 | 2026-07-20 | build | Called out minimal token use as a default in README.md, not an opt-in feature | Strengthened one bullet to state plainly that low token use is the default and mechanically checked, not just a design intention; added a matching badge. | ~215 |
 | 2026-07-20 | build | Trimmed README.md before the first real public post, cutting redundancy without losing content | Merged 3 overlapping sections into 1, cut a redundant one-liner repeat, shortened the comparison table; 222 lines to 165, same facts. | ~520 |

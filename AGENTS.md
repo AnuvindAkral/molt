@@ -25,7 +25,7 @@ This file auto-loads at your project root with Claude Code and Cowork. Most othe
 </workflow>
 
 <verification>
-This system checks itself. `molt-verify.py` confirms the index matches the log, the log is newest-first and well-formed, and any mirror byte-matches its source. Run it after any change to `memory/` or the apex files, and before declaring work done. It exits non-zero on drift, so it also belongs in CI or a pre-commit hook. Trust the audit over your own memory of what you changed.
+This system checks itself. `molt-verify.py` confirms the index matches the log, the log is newest-first and well-formed, and any mirror byte-matches its source. Run it after any change to `memory/` or the apex files, and before declaring work done. Trust the audit over your own memory of what you changed. This is enforced, not just available: `git config core.hooksPath .githooks` (one-time, per clone) blocks any commit that drifts, and `.github/workflows/molt-verify.yml` blocks any PR that does, running the adversarial benchmark too so a change to `molt-verify.py` itself that quietly weakens a check gets caught before merge. `git commit --no-verify` bypasses the local hook in a genuine emergency; CI still catches it.
 </verification>
 
 <personal_layer>

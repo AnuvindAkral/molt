@@ -1,0 +1,40 @@
+#!/bin/sh
+# Molt pre-commit hook -- makes molt-verify.py mandatory, not optional.
+#
+# One-time setup per clone (no dependency, git-native since 2.9):
+#   git config core.hooksPath .githooks
+#
+# Why this exists: a self-audit nobody is forced to run is a self-audit
+# people will eventually skip under deadline pressure. This blocks the
+# commit if molt-verify.py reports DRIFT DETECTED, the same way a failing
+# test suite blocks a merge. Warnings ("TRUSTWORTHY (with notes)") do not
+# block; only real drift (a fail) does, same severity split molt-verify.py
+# itself uses.
+#
+# Safe on a repo that hasn't adopted Molt yet: if molt-verify.py isn't
+# present at the root, this hook no-ops instead of blocking every commit.
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+VERIFY="$ROOT/molt-verify.py"
+
+if [ ! -f "$VERIFY" ]; then
+    exit 0
+fi
+
+python3 "$VERIFY" "$ROOT" --no-color >/tmp/molt-precommit-output.$$ 2>&1
+STATUS=$?
+
+if [ "$STATUS" -ne 0 ]; then
+    echo ""
+    echo "molt-verify.py reported DRIFT DETECTED -- commit blocked."
+    echo "----------------------------------------------------------"
+    cat /tmp/molt-precommit-output.$$
+    echo "----------------------------------------------------------"
+    echo "Fix at the source, then commit again. Do not paper over it."
+    echo "To bypass in a genuine emergency: git commit --no-verify"
+    rm -f /tmp/molt-precommit-output.$$
+    exit 1
+fi
+
+rm -f /tmp/molt-precommit-output.$$
+exit 0

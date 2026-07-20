@@ -452,6 +452,42 @@ def inject_git_anchor_laundering_attack(root):
     )
 
 
+NESTED_GIT_SUBPATH = os.path.join("some_outer_project", "molt_subdir")
+
+
+def build_nested_git_synthetic_root(n):
+    """A chained root, placed as a SUBDIRECTORY of a larger git repository
+    (some_outer_project/molt_subdir/), not the git top-level itself. Exists
+    to catch a confirmed real bug: check_git_anchor used to test for a
+    literal '.git' directory inside ROOT, and used a repo-root-relative git
+    path (HEAD:memory/decisions.md), both of which silently no-op the moment
+    Molt's root isn't the git top-level. Vendoring Molt into an existing
+    repo, or a monorepo subdirectory, is a real deployment shape, not a
+    contrived one, and in that shape the CRITICAL mitigation was silently
+    disabled while still printing an innocuous 'not a git repository'
+    message. Returns the OUTER directory; the actual Molt root is
+    NESTED_GIT_SUBPATH below it (see run_case's subpath handling)."""
+    outer = tempfile.mkdtemp(prefix="molt-adversarial-outer-")
+    inner = os.path.join(outer, NESTED_GIT_SUBPATH)
+    os.makedirs(inner)
+    built = build_chained_synthetic_root(n)
+    for name in os.listdir(built):
+        shutil.move(os.path.join(built, name), os.path.join(inner, name))
+    shutil.rmtree(built, ignore_errors=True)
+    _git(outer, "init", "-q")
+    _git(outer, "add", "-A")
+    _git(outer, "-c", "user.email=bench@test.local", "-c", "user.name=bench",
+         "commit", "-q", "-m", "outer repo, molt lives in a subdirectory")
+    return outer
+
+
+def inject_git_anchor_laundering_attack_nested(root):
+    """Same attack as inject_git_anchor_laundering_attack, applied inside
+    NESTED_GIT_SUBPATH, since this base's Molt root is a subdirectory of a
+    larger git repository, not root itself."""
+    inject_git_anchor_laundering_attack(os.path.join(root, NESTED_GIT_SUBPATH))
+
+
 def inject_git_anchor_legitimate_addition(root):
     """Not a corruption: a real new entry added on top (the normal workflow),
     hashed, uncommitted. check_git_anchor must NOT flag this, since flagging
@@ -636,6 +672,7 @@ def inject_missing_handoff_row(root):
 CASES_PLAIN = "plain"
 CASES_CHAINED = "chained"
 CASES_CHAINED_GIT = "chained_git"
+CASES_NESTED_GIT = "nested_git"
 
 CASES = [
     ("control_clean", None, 0, "TRUSTWORTHY", CASES_PLAIN),
@@ -675,19 +712,22 @@ CASES = [
     ("git_anchor_control_committed", None, 0, "TRUSTWORTHY", CASES_CHAINED_GIT),
     ("git_anchor_laundering_attack", inject_git_anchor_laundering_attack, 1, "DRIFT DETECTED", CASES_CHAINED_GIT),
     ("git_anchor_legitimate_addition", inject_git_anchor_legitimate_addition, 0, "TRUSTWORTHY", CASES_CHAINED_GIT),
+    ("git_anchor_nested_root_control", None, 0, "TRUSTWORTHY", CASES_NESTED_GIT, NESTED_GIT_SUBPATH),
+    ("git_anchor_nested_root_laundering_attack", inject_git_anchor_laundering_attack_nested, 1, "DRIFT DETECTED", CASES_NESTED_GIT, NESTED_GIT_SUBPATH),
 ]
 
 
-def run_case(base_root, name, injector, expected_exit, expected_verdict_substr, keep):
+def run_case(base_root, name, injector, expected_exit, expected_verdict_substr, keep, molt_subpath=""):
     case_root = tempfile.mkdtemp(prefix="molt-case-%s-" % name)
     shutil.rmtree(case_root)
     shutil.copytree(base_root, case_root)
     if injector is not None:
         injector(case_root)
 
+    verify_cwd = os.path.join(case_root, molt_subpath) if molt_subpath else case_root
     proc = subprocess.run(
         [sys.executable, "molt-verify.py", "--no-color"],
-        cwd=case_root,
+        cwd=verify_cwd,
         capture_output=True,
         text=True,
     )
@@ -720,18 +760,26 @@ def main(argv):
     base_root = build_synthetic_root(args.n)
     chained_root = build_chained_synthetic_root(args.n)
     chained_git_root = build_chained_git_synthetic_root(args.n)
-    bases = {CASES_PLAIN: base_root, CASES_CHAINED: chained_root, CASES_CHAINED_GIT: chained_git_root}
+    nested_git_root = build_nested_git_synthetic_root(args.n)
+    bases = {
+        CASES_PLAIN: base_root, CASES_CHAINED: chained_root,
+        CASES_CHAINED_GIT: chained_git_root, CASES_NESTED_GIT: nested_git_root,
+    }
     try:
         results = []
-        for name, injector, expected_exit, expected_verdict, which_base in CASES:
+        for case in CASES:
+            name, injector, expected_exit, expected_verdict, which_base = case[:5]
+            subpath = case[5] if len(case) > 5 else ""
             passed, code, verdict_line, kept_dir = run_case(
-                bases[which_base], name, injector, expected_exit, expected_verdict, args.keep
+                bases[which_base], name, injector, expected_exit, expected_verdict,
+                args.keep, molt_subpath=subpath,
             )
             results.append((name, passed, code, verdict_line, kept_dir))
     finally:
         shutil.rmtree(base_root, ignore_errors=True)
         shutil.rmtree(chained_root, ignore_errors=True)
         shutil.rmtree(chained_git_root, ignore_errors=True)
+        shutil.rmtree(nested_git_root, ignore_errors=True)
 
     print("\n%-32s %-6s %-6s %s" % ("CASE", "OK?", "EXIT", "VERDICT"))
     print("-" * 80)

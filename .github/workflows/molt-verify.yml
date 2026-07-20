@@ -1,0 +1,35 @@
+name: molt-verify
+
+# Makes the self-audit mandatory at the point most teams actually enforce
+# things: the PR, not just a local pre-commit hook someone could have
+# skipped with --no-verify or never installed at all. Two independent
+# checks: (1) the real project's own memory files verify TRUSTWORTHY,
+# (2) the adversarial benchmark itself still catches every known attack --
+# a future edit to molt-verify.py that quietly weakens a check fails here
+# before it ever reaches main.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: molt-verify.py (this project's own memory must be trustworthy)
+        run: python3 molt-verify.py --no-color
+
+      - name: adversarial benchmark (the trust claim must still hold, n=300)
+        run: python3 benchmarks/adversarial/run.py --n 300 --no-color
+
+      - name: adversarial benchmark at scale (n=3000, catches perf regressions too)
+        run: python3 benchmarks/adversarial/run.py --n 3000 --no-color

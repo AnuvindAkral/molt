@@ -9,6 +9,7 @@ reading `decisions.md` top to bottom by default. (Progressive disclosure; see
 
 | Date | Type | Title | Gist | ~tokens |
 |---|---|---|---|---|
+| 2026-07-20 | build | Made verification mandatory (pre-commit hook + CI) and fixed a real nested-repo bug in the git anchor | Added .githooks/pre-commit + GitHub Actions blocking drift; fixed check_git_anchor silently no-oping when Molt's root isn't the git top-level. | ~520 |
 | 2026-07-20 | build | Researched real agent-memory token-efficiency practice and added a Gist column, deliberately declining vector search | Added an INDEX.md Gist column so most lookups skip decisions.md entirely; declined embeddings/vector search as a dependency that also isn't exact. Fixed 2 masked check gaps found along the way. | ~510 |
 | 2026-07-20 | build | Made token-efficiency claims self-verifying instead of just asserted | Fixed stale ~tokens estimates (was 30-50% low); added a check that WARNs on index drift and on entries over a 600-token budget. | ~470 |
 | 2026-07-20 | fix | Fixed every finding from an external-style security review, including one CRITICAL | Added local git-anchor check (mitigates hash-chain laundering), molt-redact.py (sanctioned redaction), gitignore-negation WARN, symlink guards. | ~820 |

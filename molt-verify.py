@@ -428,14 +428,37 @@ def check_git_anchor(root, rep):
     it; that needs a signing key or a remote with branch protection, both
     outside what a local, dependency-free script can guarantee. Documented
     honestly, not oversold. Opt-in: skipped entirely if this isn't a git
-    repository, git isn't installed, or decisions.md has no commit yet."""
+    repository, git isn't installed, or decisions.md has no commit yet.
+
+    Detects "is this a git repo" via `git rev-parse --is-inside-work-tree`,
+    not by checking for a literal `.git` directory inside ROOT: that
+    directory-based check is wrong the moment Molt's root is a subdirectory
+    of a larger repository (a monorepo, Molt vendored into an existing
+    project), a real, confirmed deployment shape, not an edge case. It
+    silently reported "not a git repository" in that shape, disabling the
+    CRITICAL mitigation exactly where nesting makes it most likely someone
+    would need it. Similarly, `HEAD:memory/decisions.md` is resolved by git
+    relative to the repository's TOP LEVEL, not the current directory;
+    `HEAD:./memory/decisions.md` (the `./` prefix) is the cwd-relative form,
+    required for the same nested-root case."""
     rep.section("git anchor (local, best-effort -- not non-repudiation)")
-    if not os.path.isdir(os.path.join(root, ".git")):
+    try:
+        toplevel_proc = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=root, capture_output=True, text=True, timeout=5,
+        )
+    except (OSError, FileNotFoundError):
+        print("  (git binary not available -- skipped)")
+        return
+    except Exception as exc:  # noqa: BLE001 -- git invocation must never crash the audit
+        print("  (git invocation failed unexpectedly (%s) -- skipped)" % exc.__class__.__name__)
+        return
+    if toplevel_proc.returncode != 0 or toplevel_proc.stdout.strip() != "true":
         print("  (not a git repository -- skipped, this check is opt-in)")
         return
     try:
         proc = subprocess.run(
-            ["git", "show", "HEAD:memory/decisions.md"],
+            ["git", "show", "HEAD:./memory/decisions.md"],
             cwd=root, capture_output=True, text=True, timeout=5,
         )
     except (OSError, FileNotFoundError):

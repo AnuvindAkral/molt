@@ -8,6 +8,11 @@ setup: it proves the memory isn't lying to you. No dependencies, no network, no
 services. Just Python 3 and your files.
 
 It checks, in order:
+  0. no tracked memory/apex file contains an unresolved git merge conflict
+     marker (a real risk once memory/decisions.md is shared and edited
+     concurrently) -- checked first, since a stray marker would corrupt
+     every check downstream, and the goal is one clear failure, not a
+     confusing cascade;
   1. the index lists exactly the decisions the log actually contains (no phantom
      rows, no missing rows) -- catches an index that has drifted from the truth;
   2. the log is newest-first and every entry is well-formed;
@@ -701,6 +706,51 @@ def check_structure(root, rep):
     return ok
 
 
+MERGE_CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
+CONFLICT_CHECKED_FILES = (
+    "CLAUDE.md", "AGENTS.md", "CLAUDE.local.md", "AGENTS.local.md",
+    os.path.join("memory", "decisions.md"), os.path.join("memory", "INDEX.md"),
+)
+
+
+def check_merge_conflict_markers(root, rep):
+    """Concurrent edits to a shared, append-only memory/decisions.md is a
+    real scenario (two people, or two agent sessions, both add an entry at
+    the top around the same time) and a real git merge conflict, since both
+    sides touch the exact same anchor point. `.gitattributes` sets
+    `merge=union` for memory/decisions.md so most such conflicts resolve
+    automatically (both entries kept, order settled by the existing same-day
+    WARN if ambiguous). Union merge can't cover every shape of conflict
+    (e.g. if the file was hash-chained, since each side's Hash field commits
+    to a different prev_hash), and a human resolving a REAL conflict by hand
+    can always leave literal `<<<<<<<`/`=======`/`>>>>>>>` markers behind if
+    they save mid-resolution or miss one. Those markers must never survive
+    into a commit: they'd corrupt parsing of every check downstream, silently
+    or not, so this runs first and fails loud, immediately, rather than
+    letting a confusing cascade of unrelated-looking failures be the only
+    signal something went wrong."""
+    rep.section("merge conflict markers")
+    found_any = False
+    for rel in CONFLICT_CHECKED_FILES:
+        path = os.path.join(root, rel)
+        if not os.path.isfile(path):
+            continue
+        try:
+            text = read(path)
+        except (OSError, UnicodeDecodeError):
+            continue
+        for marker in MERGE_CONFLICT_MARKERS:
+            if any(line.startswith(marker) for line in text.splitlines()):
+                found_any = True
+                rep.fail(
+                    "%s contains an unresolved merge conflict marker (%s) -- "
+                    "finish resolving the merge before committing, then re-run "
+                    "molt-chain-append.py if this file is hash-chained" % (rel, marker)
+                )
+    if not found_any:
+        rep.ok("no unresolved merge conflict markers in any tracked memory/apex file")
+
+
 def check_apex_budget(root, rep):
     rep.section("apex file")
     path = os.path.join(root, "CLAUDE.md")
@@ -1010,6 +1060,7 @@ def main(argv):
     # failure inside a single check is caught, reported as drift, and the
     # remaining checks still run.
     checks = (
+        check_merge_conflict_markers,
         check_apex_budget,
         check_agents_md,
         check_gitignore_sanity,

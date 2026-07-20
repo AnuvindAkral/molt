@@ -111,6 +111,30 @@ reading the log, or running `molt-verify.py`, can see a redaction happened,
 even if not what was removed. Log the redaction as a real `INDEX.md` row
 like any other entry.
 
+## Two people (or two agent sessions) editing memory/decisions.md at once
+
+A shared, append-only log is exactly the shape git handles best and worst at
+the same time: every legitimate edit only ADDS lines near the top, never
+changes existing ones, which is precisely what `merge=union` (set in
+`.gitattributes` for `memory/decisions.md`) resolves automatically, keeping
+both sides' new entries with no manual conflict resolution. Tested directly:
+two branches each appending a different entry at the same anchor point
+merge cleanly, both entries survive, and the existing same-day WARN (date
+alone can't order same-day entries) is the correct, already-built signal for
+the resulting ambiguity, not a new problem this needs to solve.
+
+What union merge doesn't cover: if either side had already run
+`molt-chain-append.py` before merging, the merged file has real entries with
+no `**Hash:**` field (`check_hash_chain` correctly reports "chain is
+incomplete"), fixed the same way any hash gap is fixed, run
+`molt-chain-append.py` again, then commit. And a genuine conflict, not just
+two additive appends, e.g. two sides both trying to describe the *same*
+event differently, still needs a human, and a human resolving one by hand
+can leave literal `<<<<<<<`/`=======`/`>>>>>>>` markers behind. Those must
+never survive into a commit: `check_merge_conflict_markers` runs first,
+before any other check, and fails loud rather than letting a stray marker
+corrupt every check downstream into a confusing cascade.
+
 ## Model independence, concretely
 
 Every rule in `CLAUDE.md` is checkable by inspection: a model either follows it or doesn't, with no dependence on that model's personality. No rule says "respond the way you normally would." No fact from a past session is assumed remembered, because a new model has no access to a prior model's history; anything worth remembering is in `memory/`. The never-list bans inventing facts to fill a gap, which is the exact failure that shows up when an unfamiliar model tries to sound like it remembers something it doesn't.

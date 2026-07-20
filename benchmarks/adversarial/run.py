@@ -642,6 +642,20 @@ def inject_index_gist_column_empty(root):
     open(p, "w", encoding="utf-8").write(text2)
 
 
+def inject_unresolved_merge_conflict_marker(root):
+    """A botched or half-finished merge resolution leaves a literal git
+    conflict marker in memory/decisions.md. Must fail loud and first, before
+    any other check tries to parse what is, at that point, not valid content
+    at all. This is the realistic failure mode .gitattributes' merge=union
+    (for memory/decisions.md) doesn't fully cover: a genuine conflict (not
+    just two additive appends) still needs a human, and a human can leave
+    markers behind."""
+    p = os.path.join(root, "memory", "decisions.md")
+    text = open(p, encoding="utf-8").read()
+    marker = "<<<<<<< HEAD\nSomeone half-resolved this and forgot the rest.\n=======\nother side\n>>>>>>> some-branch\n"
+    open(p, "w", encoding="utf-8").write(marker + text)
+
+
 def inject_gitignore_negation_pattern(root):
     """.gitignore contains a '!' negation pattern, which check_gitignore_sanity
     deliberately does not evaluate (a real gitignore engine is a large
@@ -714,6 +728,7 @@ CASES = [
     ("git_anchor_legitimate_addition", inject_git_anchor_legitimate_addition, 0, "TRUSTWORTHY", CASES_CHAINED_GIT),
     ("git_anchor_nested_root_control", None, 0, "TRUSTWORTHY", CASES_NESTED_GIT, NESTED_GIT_SUBPATH),
     ("git_anchor_nested_root_laundering_attack", inject_git_anchor_laundering_attack_nested, 1, "DRIFT DETECTED", CASES_NESTED_GIT, NESTED_GIT_SUBPATH),
+    ("unresolved_merge_conflict_marker", inject_unresolved_merge_conflict_marker, 1, "DRIFT DETECTED", CASES_PLAIN),
 ]
 
 

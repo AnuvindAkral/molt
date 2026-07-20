@@ -35,13 +35,15 @@ index, log, and mirror all tell the same story
 
 ## The one-command install, straight from GitHub
 
-No cloning, no download step, nothing to check out first. Paste this into a terminal (or into a Claude Code / Cowork session) pointed at the folder you want Molt set up in:
+No cloning, no download step, nothing to fill in. Copy this straight off the repo page, paste it into a terminal (or a Claude Code / Cowork session), and run it right where you already are:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/<you>/molt/main/molt-init.py | python3 - /path/to/your/project
+curl -fsSL https://raw.githubusercontent.com/<you>/molt/main/molt-init.py | python3 -
 ```
 
-That single command pulls down `molt-init.py` and runs it immediately. It carries its own copies of everything Molt needs baked in, so this one file, run once, creates the whole system: the audit script, the memory files, the git hook, the CI workflow, all of it, then runs the audit and prints TRUSTWORTHY. Nothing else needs to be on disk first.
+That's the whole setup. It pulls down `molt-init.py` and runs it immediately in the current directory, no path to type, nothing to check out first. It carries its own copies of everything Molt needs baked in, so this one command creates the whole system: the audit script, the memory files, the git hook, the CI workflow, all of it, then runs the audit and prints TRUSTWORTHY.
+
+Want it set up somewhere else instead of the current directory? Add the path: `curl -fsSL ... | python3 - /path/to/your/project`.
 
 ## Cloning it instead
 

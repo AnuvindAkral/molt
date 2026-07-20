@@ -33,11 +33,16 @@ run scripts/build-molt-init.py to regenerate them, then molt-verify.py's
 check_init_embed_consistency will confirm they match again.
 
 Usage:
-    python3 molt-init.py TARGET_DIR [--force]
+    python3 molt-init.py [TARGET_DIR] [--force]
 
-TARGET_DIR must already exist (an existing repo you're adopting Molt into,
-or an empty directory for a fresh one). This script does not run `git init`
-for you; that's your call to make, not this script's.
+TARGET_DIR is optional; it defaults to the current directory, so this is a
+true copy-paste one-liner, no path to fill in:
+
+    curl -fsSL https://raw.githubusercontent.com/<you>/molt/main/molt-init.py | python3 -
+
+If given, TARGET_DIR must already exist (an existing repo you're adopting
+Molt into, or an empty directory for a fresh one). This script does not run
+`git init` for you; that's your call to make, not this script's.
 """
 
 import base64
@@ -1502,11 +1507,17 @@ def ensure_gitattributes(target, force):
 
 
 def main(argv):
-    if len(argv) < 2 or argv[1] in ("-h", "--help"):
+    args = argv[1:]
+    if "-h" in args or "--help" in args:
         print(__doc__)
         return 0
-    target = os.path.abspath(argv[1])
-    force = "--force" in argv[2:]
+    force = "--force" in args
+    positional = [a for a in args if a != "--force"]
+    # No TARGET_DIR given: default to the current directory. This is what
+    # makes `curl ... | python3 -` work as a true one-liner, copy the
+    # command off GitHub, paste it into a terminal or a Claude session,
+    # nothing to fill in, it sets up right where the shell already is.
+    target = os.path.abspath(positional[0]) if positional else os.path.abspath(".")
 
     if not os.path.isdir(target):
         print("TARGET_DIR does not exist: %s" % target)

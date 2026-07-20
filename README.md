@@ -7,6 +7,7 @@
 [![Python 3, stdlib only](https://img.shields.io/badge/python-3%2C%20stdlib%20only-3776AB)](#why-it-works-the-way-it-does)
 [![Self-auditing](https://img.shields.io/badge/self--auditing-43%2F43%20adversarial%20cases-success)](#the-part-nobody-else-does-it-tests-itself)
 [![Works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Cowork%20%7C%20Cursor%20%7C%20Copilot%20%7C%20Aider-orange)](#works-with-whatever-you-already-use)
+[![Good first setup](https://img.shields.io/badge/good%20for-Day%20One%20setup-blueviolet)](#if-you-just-picked-up-claude-cursor-or-any-ai-coding-tool-start-here)
 
 **Right now, your AI agent's memory is just something it tells you. There's no way to check if it's true. Molt fixes that: one command gives your agent a memory made of plain files, and a built-in checker that proves the memory is honest, in order, and hasn't been quietly changed.**
 
@@ -19,6 +20,12 @@ Copy that line. Paste it into a terminal, or straight into a Claude Code / Cowor
 > **Full disclosure:** this is my first-ever public GitHub project. It also has 13 mechanical checks and 43 tests that try to break it on purpose. I skipped "hello world" and went straight to "prove it." No regrets.
 
 ---
+
+## If you just picked up Claude, Cursor, or any AI coding tool, start here
+
+This is genuinely built with you in mind, not as an afterthought. Most people set up an AI coding agent with nothing (no rules file, no memory, no structure), hit the same frustrations everyone hits after a few weeks (re-explaining things, losing context, not trusting what it says), and only then go looking for a fix. You get to skip that whole phase.
+
+Run the one-liner above before you've built up any bad habits, and your very first setup is already the good one: a real rules file your agent actually reads, a memory that survives switching models or tools later, and a built-in checker that tells you the moment something's wrong instead of you finding out the hard way. You don't need to know what any of the words below mean to get this right on day one. That's the point.
 
 ## The problem, in one sentence
 

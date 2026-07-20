@@ -4,6 +4,13 @@
 > Never rewrite or reorder an existing entry; a changed mind gets a new entry that supersedes the old one.
 > This file ships with one real worked entry so you can see the shape. Keep it or delete it.
 
+## 2026-07-20 · Added a beginner-first section to README.md, positioning Molt as the right day-one setup
+**Decision:** Added a new section right after the opening disclosure block, "If you just picked up Claude, Cursor, or any AI coding tool, start here," aimed specifically at people brand new to AI coding agents rather than people already frustrated with an existing setup. The pitch: most people configure an agent with nothing, hit the familiar pain points weeks later, then go looking for a fix; running the one-liner before any of that happens means day one is already the good setup, no bad habits to unlearn first. Added a matching badge ("good for: Day One setup") linking to the new section, and verified the anchor resolves correctly. No existing facts, sections, or other wording changed.
+**Reasoning:** Direct instruction: make clear this is mainly for people fresh to a tool like Claude who want the best possible setup from the start, not only for people already dealing with the problems described elsewhere in the README. That's a distinct audience angle (prevention, not just cure) worth naming explicitly rather than leaving it implied.
+**Reversible:** Yes. Documentation-only addition; nothing else in the project reads this section.
+**Review:** None.
+**Hash:** f58d9d4aeabe33391bb3159b33ac1e1de44fe5f1fada100aa50c45a1c3bcac1b
+
 ## 2026-07-20 · Added personality (wit) to README.md and disclosed it's a first GitHub project
 **Decision:** Layered wit into README.md's existing prose in a handful of targeted spots rather than rewriting it wholesale: the opening disclosure block ("this is my first-ever public GitHub project... I skipped hello world and went straight to prove it"), a sharper line in the trust-problem framing, a couple of dry asides in the "game changer" section, one line in "the bug that made this real," a new FAQ entry addressing the first-project question directly and honestly, and a closing line in the footer signature. Every factual claim, section, badge, and anchor link is unchanged from the previous pass; this was tone only, added in small doses so the humor doesn't crowd out the actual information, which is still the point of the page.
 **Reasoning:** Direct instruction: make it witty, matching the requester's own personality, and disclose openly that this is a first GitHub project rather than letting a reader assume otherwise. The disclosure is framed as a strength (a first project built with a built-in adversarial test suite) rather than an apology, since that's the honest and more interesting framing.

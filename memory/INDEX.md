@@ -9,6 +9,7 @@ reading `decisions.md` top to bottom by default. (Progressive disclosure; see
 
 | Date | Type | Title | Gist | ~tokens |
 |---|---|---|---|---|
+| 2026-07-20 | build | Trimmed README.md before the first real public post, cutting redundancy without losing content | Merged 3 overlapping sections into 1, cut a redundant one-liner repeat, shortened the comparison table; 222 lines to 165, same facts. | ~520 |
 | 2026-07-20 | build | Added a beginner-first section to README.md, positioning Molt as the right day-one setup | New section targets people brand new to Claude/AI agents, framed as prevention not just cure; matching badge added. | ~255 |
 | 2026-07-20 | build | Added personality (wit) to README.md and disclosed it's a first GitHub project | Targeted humor in a few spots, an honest "first project, built with 43 tests anyway" disclosure, a matching FAQ entry; no facts changed. | ~335 |
 | 2026-07-20 | build | Rewrote README.md in plainer language with concrete, story-shaped use cases | Simpler prose, real first-person scenarios, a "game changer" framing section; same facts, badge anchors updated for renamed headers. | ~340 |

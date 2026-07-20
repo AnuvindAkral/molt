@@ -54,9 +54,13 @@ Every `PASS` above ran against real files. Not a model describing itself and hop
 
 ## Who this is for, and what it actually fixes
 
+This isn't only a fresh-start tool. It works the same way whether you installed your AI agent five minutes ago or you've had Claude Code, Cursor, or Copilot running on this project for months.
+
 **If you just picked up Claude, Cursor, or any AI coding tool:** most people set one up with nothing, hit the usual pain weeks later (re-explaining things, losing context, not trusting what it says), then go looking for a fix. Run this first and skip that whole phase, your day-one setup is already the good one.
 
-**If you've already felt one of these,** Molt fixes it directly:
+**If you've been using one of these tools for a while already:** dropping Molt in today doesn't erase anything. It reads your existing `CLAUDE.md` if you have one and never overwrites it, so the months of rules you've already written stay exactly as they are, they just get memory and a checker added on top, retroactively.
+
+**Either way,** here's what it actually fixes, day one or day two hundred:
 
 - Switched models and lost all your project context? Molt keeps it in files any model reads on day one.
 - Agent keeps re-asking things you already explained? That answer now lives in a file it's supposed to check first.

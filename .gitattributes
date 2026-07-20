@@ -1,1 +1,11 @@
 memory/decisions.md merge=union
+
+# Found by adversarial testing: without this, a Windows checkout with
+# core.autocrlf=true silently converts these shell scripts to CRLF line
+# endings, breaking their shebang line ("/bin/bash\r" is not a valid
+# interpreter path) and making the script fail to execute at all --
+# exit 126, "bad interpreter", with no signal Claude ever sees. Forcing
+# LF here means every checkout gets a working script regardless of the
+# platform's own line-ending settings.
+.githooks/pre-commit text eol=lf
+.claude/hooks/*.sh text eol=lf

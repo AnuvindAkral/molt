@@ -9,6 +9,7 @@ reading `decisions.md` top to bottom by default. (Progressive disclosure; see
 
 | Date | Type | Title | Gist | ~tokens |
 |---|---|---|---|---|
+| 2026-07-20 | fix | Apex-level adversarial pass on the hooks feature, fixed a data-destroying crash bug and a Windows CRLF gap | A crash mid-write to settings.json could have wiped a user's own hooks entirely; fixed with an atomic temp-file-then-rename write, verified by simulating the crash directly. Also fixed a Windows CRLF checkout gap that broke hook shebangs. | ~645 |
 | 2026-07-20 | fix | Hardened the hooks feature and molt-init.py itself after a dedicated adversarial pass, fixed 3 real gaps | Fixed a false-positive-on-crash gap in both hooks, a BOM-rejection gap in settings.json parsing, and a raw-traceback-on-unwritable-target crash across molt-init.py's write helpers; confirmed several other suspected risks were not real gaps. | ~640 |
 | 2026-07-20 | build | Added Claude Code SessionStart/SessionEnd lifecycle hooks, the one Cognee trait chosen to adopt | Two new hook scripts auto-run molt-verify.py at session start/end; molt-init.py merges them into .claude/settings.json non-destructively; scoped explicitly to Claude Code only. | ~430 |
 | 2026-07-20 | build | Reframed the one honest weakness row in README's comparison table, instead of hiding it | Changed a flat "no" to "not the goal," explained the tradeoff directly, linked SCALE-SPEC.md for the deeper reasoning; nothing softened or removed. | ~330 |

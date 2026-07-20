@@ -1538,7 +1538,19 @@ Copy this file, don't edit it. Name the copy YYYY-MM-DD-short-description.md.
 ## Next step
 """
 
-GITATTRIBUTES_ADDITION = "memory/decisions.md merge=union\n"
+GITATTRIBUTES_ADDITION = (
+    "memory/decisions.md merge=union\n"
+    "\n"
+    "# Found by adversarial testing: without this, a Windows checkout with\n"
+    "# core.autocrlf=true silently converts these shell scripts to CRLF line\n"
+    "# endings, breaking their shebang line (\"/bin/bash\\r\" is not a valid\n"
+    "# interpreter path) and making the script fail to execute at all --\n"
+    "# exit 126, \"bad interpreter\", with no signal Claude ever sees. Forcing\n"
+    "# LF here means every checkout gets a working script regardless of the\n"
+    "# platform's own line-ending settings.\n"
+    ".githooks/pre-commit text eol=lf\n"
+    ".claude/hooks/*.sh text eol=lf\n"
+)
 
 
 def decode_embed(b64_text):
@@ -1604,19 +1616,30 @@ def ensure_gitignore(target, force):
 
 def ensure_gitattributes(target, force):
     path = os.path.join(target, ".gitattributes")
+    # Checked as separate rules, not one blob: an existing .gitattributes
+    # from before the eol=lf fix existed would already contain
+    # "memory/decisions.md" and, under the old single check, get skipped
+    # forever, never picking up the CRLF protection. Each real rule is
+    # checked and appended independently, same pattern as ensure_gitignore.
+    needed = (
+        ("memory/decisions.md merge=union", "union-merge for memory/decisions.md"),
+        (".githooks/pre-commit text eol=lf", "LF line endings for .githooks/pre-commit"),
+        (".claude/hooks/*.sh text eol=lf", "LF line endings for .claude/hooks/*.sh"),
+    )
     try:
         if not os.path.isfile(path):
             with open(path, "w", encoding="utf-8") as f:
                 f.write(GITATTRIBUTES_ADDITION)
-            return "created (union-merge for memory/decisions.md, see decision log)"
+            return "created (union-merge + forced LF line endings for shell hooks)"
         text = open(path, encoding="utf-8").read()
-        if "memory/decisions.md" in text:
+        missing = [(rule, label) for rule, label in needed if rule not in text]
+        if not missing:
             return "already configured"
         with open(path, "a", encoding="utf-8") as f:
-            f.write(GITATTRIBUTES_ADDITION)
+            f.write("\n" + "\n".join(rule for rule, _ in missing) + "\n")
     except OSError as e:
         return "failed: %s" % e
-    return "appended union-merge rule for memory/decisions.md"
+    return "appended %s" % ", ".join(label for _, label in missing)
 
 
 MOLT_HOOK_ENTRY_START = {
@@ -1639,6 +1662,39 @@ MOLT_HOOK_ENTRY_END = {
         }
     ]
 }
+
+
+def _atomic_write_json(path, data):
+    """
+    Writes JSON to `path` without ever leaving it truncated or half-written.
+
+    Found by adversarial testing, not by inspection: `open(path, "w")` on
+    an existing file truncates it to zero bytes the instant it's opened,
+    before a single new byte is written. If this process is interrupted
+    between that open() and the write finishing (Ctrl-C, a closed
+    terminal, an OOM kill, a power loss), a settings.json holding a user's
+    OWN pre-existing hooks -- entirely unrelated to Molt -- would be wiped
+    to an empty file, not just left with Molt's entries missing. Writing
+    to a sibling temp file first, then os.replace()-ing it into place, is
+    atomic on POSIX and Windows alike when both paths share a filesystem
+    (true here, same directory): the original file is either left fully
+    intact or fully replaced, there is no in-between state to crash into.
+    """
+    tmp_path = path + ".molt-tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+        os.replace(tmp_path, path)
+    finally:
+        # If the write itself failed partway (disk full, permission error
+        # after the temp file was created), don't leave a stray .molt-tmp
+        # file behind -- os.replace() never ran, so it's safe to remove.
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
 
 def _settings_already_has_molt_hook(matcher_groups, script_name):
@@ -1678,9 +1734,7 @@ def ensure_claude_hooks_settings(target, force):
         }
         try:
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
-                f.write("\n")
+            _atomic_write_json(path, data)
         except OSError as e:
             return "failed: %s" % e
         return "created (registers Molt's SessionStart/SessionEnd hooks)"
@@ -1726,9 +1780,7 @@ def ensure_claude_hooks_settings(target, force):
         return "already registered"
 
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-            f.write("\n")
+        _atomic_write_json(path, data)
     except OSError as e:
         return "failed: %s" % e
     return "merged into existing file (added %s)" % ", ".join(changed)

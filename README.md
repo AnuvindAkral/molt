@@ -16,6 +16,8 @@ curl -fsSL https://raw.githubusercontent.com/AnuvindAkral/molt/main/molt-init.py
 
 Copy that line. Paste it into a terminal, or straight into a Claude Code / Cowork session, in whatever folder your project lives in. Press enter. That's the entire setup. Keep reading for what you just got, in plain words.
 
+> **Full disclosure:** this is my first-ever public GitHub project. It also has 13 mechanical checks and 43 tests that try to break it on purpose. I skipped "hello world" and went straight to "prove it." No regrets.
+
 ---
 
 ## The problem, in one sentence
@@ -28,7 +30,7 @@ Think about how this actually shows up:
 - You come back after a week off. A new session, maybe a new teammate. Nobody, and nothing, remembers what was decided or why.
 - Your agent says "I already fixed that." Maybe it did. Maybe it's just confidently wrong. There is no button to press that tells you which.
 
-None of this is really an "AI" problem. It's a **trust** problem: memory that can't be checked isn't memory, it's just a claim. Every other memory tool out there tries to make the claim bigger (more context, smarter search, fancier retrieval). Molt does something different: it makes the claim provable.
+None of this is really an "AI" problem. It's a **trust** problem: memory that can't be checked isn't memory, it's just a claim, said with confidence, by something that has never once been wrong about being right. Every other memory tool out there tries to make the claim bigger (more context, smarter search, fancier retrieval). Molt does something different: it makes the claim provable.
 
 ## What Molt actually does
 
@@ -72,7 +74,7 @@ molt-init.py embed consistency     PASS  embedded copies byte-match the real fil
 VERDICT: TRUSTWORTHY (with notes)   14 pass / 1 warn / 0 fail
 ```
 
-Every line that says `PASS` is a real check that ran against real files, not a model describing itself.
+Every line that says `PASS` is a real check that ran against real files, not a model describing itself and hoping you don't ask follow-up questions.
 
 ## Real situations this actually fixes
 
@@ -92,11 +94,11 @@ These aren't hypothetical. They're the exact reasons this exists.
 
 ## Why this can be a genuine game changer
 
-Not because it's clever. Because of what it removes: the need to just take your AI agent's word for it.
+Not because it's clever. Because of what it removes: the need to just take your AI agent's word for it, the same way you'd take a coworker's word for it, except the coworker can't actually remember Tuesday and will say so with total confidence anyway.
 
-Right now, almost everyone using an AI coding agent has felt at least one of the moments above. Most people shrug and re-explain things, or quietly stop fully trusting what the agent tells them. Molt turns "trust me" into "check me." That's a small idea with a big effect once you've actually felt the alternative: an agent memory that's provably not lying is worth more than one that's merely bigger.
+Right now, almost everyone using an AI coding agent has felt at least one of the moments above. Most people shrug and re-explain things, or quietly stop fully trusting what the agent tells them, the AI equivalent of nodding along in a meeting while planning to Google it later. Molt turns "trust me" into "check me." That's a small idea with a big effect once you've actually felt the alternative: an agent memory that's provably not lying is worth more than one that's merely bigger.
 
-And the setup cost for that is one line pasted into a terminal. That gap, huge payoff, tiny effort, is exactly what makes something worth sharing with the next person who complains about their AI agent forgetting things.
+And the setup cost for that is one line pasted into a terminal. That gap, huge payoff, tiny effort, is exactly what makes something worth sharing with the next person who complains about their AI agent forgetting things, which, statistically, is going to be almost everyone you know who uses one.
 
 ## Zero to hero, in one command
 
@@ -152,7 +154,7 @@ git config core.hooksPath .githooks   # one-time setup, blocks a bad commit loca
 
 ## The bug that made this real
 
-This isn't a hypothetical worry. While building Molt, a hand-copied backup of the decision log picked up a sentence that never existed in the real one. It looked completely normal. It would have been believed. A simple byte-by-byte comparison caught it; just reading it over again had not. The rule that came out of that moment, never hand-edit a copy, always regenerate it and check it, is the whole philosophy of this project in one sentence: **good intentions drift. A check doesn't.**
+This isn't a hypothetical worry. While building Molt, a hand-copied backup of the decision log picked up a sentence that never existed in the real one. It looked completely normal. It would have been believed, confidently, by everyone, forever. A simple byte-by-byte comparison caught it; just reading it over again had not, which is exactly the point. The rule that came out of that moment, never hand-edit a copy, always regenerate it and check it, is the whole philosophy of this project in one sentence: **good intentions drift. A check doesn't.**
 
 ## How it stacks up
 
@@ -184,6 +186,8 @@ Claude Code, Cowork, Cursor, GitHub Copilot, Codex CLI, Gemini CLI, Aider, Winds
 
 **Can I skip the safety hook and CI check and just use the memory files?** Yes, both are optional extras. Skip them and everything else still works exactly the same.
 
+**Wait, is this really your first GitHub project?** Yes. I figured if I was going to jump in, I might as well build something whose entire job is catching me if I get something wrong. Turns out that's a pretty good policy for a first project, or honestly any project.
+
 ## Want the deeper docs, or to look at the source?
 
 The one-liner above is genuinely all you need to use Molt. If you'd rather read the full reasoning (`ARCHITECTURE.md`), the repeatable workflows (`PROTOCOLS.md`), or poke at the test suite yourself:
@@ -201,7 +205,7 @@ Issues and pull requests are welcome. The single most valuable thing you can do 
 
 MIT. Use it, fork it, rename it, take it apart, no credit required (though a star helps other people find it, which is the only reason to ask).
 
-Built by [Anuvind Akral](https://github.com/AnuvindAkral).
+Built by [Anuvind Akral](https://github.com/AnuvindAkral), repo #1. If you're reading this and it's still standing, the 43 tests did their job.
 
 ---
 

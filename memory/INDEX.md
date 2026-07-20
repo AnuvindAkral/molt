@@ -9,6 +9,7 @@ reading `decisions.md` top to bottom by default. (Progressive disclosure; see
 
 | Date | Type | Title | Gist | ~tokens |
 |---|---|---|---|---|
+| 2026-07-20 | build | Added personality (wit) to README.md and disclosed it's a first GitHub project | Targeted humor in a few spots, an honest "first project, built with 43 tests anyway" disclosure, a matching FAQ entry; no facts changed. | ~335 |
 | 2026-07-20 | build | Rewrote README.md in plainer language with concrete, story-shaped use cases | Simpler prose, real first-person scenarios, a "game changer" framing section; same facts, badge anchors updated for renamed headers. | ~340 |
 | 2026-07-20 | build | Added CONTRIBUTING.md and linked it from README | Contributor guide: bug reports, PR checklist matching what CI checks, and an explicit "won't be merged" list (no dependencies, no network calls). | ~270 |
 | 2026-07-20 | build | Rewrote README.md for GitHub discoverability and beginner clarity, and fixed a real leak in install.sh | Badges, real captured demo output, plain-English use cases, updated file tree, adversarial-benchmark callout; fixed install.sh copying this project's own real decision log into adopters' projects. | ~590 |

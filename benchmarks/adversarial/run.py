@@ -704,6 +704,29 @@ def inject_missing_handoff_row(root):
         f.write("# Handoff, 2026-07-20\n\nReal file, deliberately not indexed.\n")
 
 
+MOLT_INIT_PY = os.path.join(MOLT_ROOT, "molt-init.py")
+
+
+def inject_init_embed_correct(root):
+    """Control: molt-init.py copied in alongside a real molt-verify.py that
+    is itself an unmodified copy of the same source file its embed was
+    built from. Should verify clean, proving the check doesn't false-positive
+    on the normal, in-sync case."""
+    shutil.copy(MOLT_INIT_PY, os.path.join(root, "molt-init.py"))
+
+
+def inject_init_embed_stale(root):
+    """molt-init.py copied in as-is, but the real molt-verify.py sibling in
+    this root gets edited afterward, exactly the scenario check_init_embed_
+    consistency exists to catch: someone edited the real file and forgot to
+    run scripts/build-molt-init.py, so the embedded copy molt-init.py would
+    hand a fresh adopter is now quietly wrong."""
+    shutil.copy(MOLT_INIT_PY, os.path.join(root, "molt-init.py"))
+    p = os.path.join(root, "molt-verify.py")
+    with open(p, "a", encoding="utf-8") as f:
+        f.write("\n# drift injected for benchmark, not present in molt-init.py's embed\n")
+
+
 CASES_PLAIN = "plain"
 CASES_CHAINED = "chained"
 CASES_CHAINED_GIT = "chained_git"
@@ -751,6 +774,8 @@ CASES = [
     ("git_anchor_nested_root_laundering_attack", inject_git_anchor_laundering_attack_nested, 1, "DRIFT DETECTED", CASES_NESTED_GIT, NESTED_GIT_SUBPATH),
     ("unresolved_merge_conflict_marker", inject_unresolved_merge_conflict_marker, 1, "DRIFT DETECTED", CASES_PLAIN),
     ("placeholder_mentioned_in_prose", inject_placeholder_mentioned_in_prose, 0, "TRUSTWORTHY", CASES_PLAIN),
+    ("init_embed_correct", inject_init_embed_correct, 0, "TRUSTWORTHY", CASES_PLAIN),
+    ("init_embed_stale", inject_init_embed_stale, 1, "DRIFT DETECTED", CASES_PLAIN),
 ]
 
 

@@ -56,6 +56,16 @@ It checks, in order:
      files, every mirror byte-matches its source -- catches a mirror that has
      quietly gained, lost, or invented a line. This exact check caught a
      fabricated sentence during Molt's own development.
+  13. if molt-init.py exists alongside real copies of the files it embeds
+     (molt-verify.py, molt-chain-append.py, molt-redact.py, the pre-commit
+     hook, the CI workflow), its embedded base64 copies byte-match the real
+     files -- molt-init.py must work standalone with nothing else present
+     (see its own docstring), which means it carries its own copies rather
+     than reading siblings at runtime, and a carried copy that's gone stale
+     the moment someone edits molt-verify.py and forgets to run
+     scripts/build-molt-init.py is exactly the kind of silent drift this
+     whole project exists to catch. Opt-in: skipped if molt-init.py or any
+     given sibling isn't present in this root at all.
 
 The log parser also refuses to treat a '## '-looking line as a new entry unless
 it's preceded by a blank line, so a heading pasted or written inside an entry's
@@ -77,6 +87,7 @@ Usage:
     python3 molt-verify.py --no-color
 """
 
+import base64
 import fnmatch
 import hashlib
 import os
@@ -975,6 +986,77 @@ def check_handoffs(root, rep):
         rep.ok("all %d real handoff file(s) are indexed, no phantoms, no gaps" % len(real_files))
 
 
+INIT_EMBED_MAP = {
+    "MOLT_VERIFY_PY": "molt-verify.py",
+    "MOLT_CHAIN_APPEND_PY": "molt-chain-append.py",
+    "MOLT_REDACT_PY": "molt-redact.py",
+    "PRE_COMMIT_HOOK": os.path.join(".githooks", "pre-commit"),
+    "CI_WORKFLOW_YML": os.path.join(".github", "workflows", "molt-verify.yml"),
+}
+
+
+def check_init_embed_consistency(root, rep):
+    """molt-init.py is meant to work with nothing else present (see its own
+    docstring): copy that one file anywhere and it bootstraps the whole
+    setup. That only works because it carries its own base64 copies of
+    molt-verify.py, molt-chain-append.py, molt-redact.py, the pre-commit
+    hook, and the CI workflow instead of reading siblings at runtime. A
+    carried copy is only trustworthy if it's kept in sync; this check
+    decodes what molt-init.py actually embeds and compares it, byte for
+    byte, against the real file, whenever this project's own repo (or
+    anyone else's fork of it) has both molt-init.py and the real files
+    checked out side by side. An adopter who only has molt-init.py, with
+    none of the real siblings present, has nothing for this check to
+    compare against, so it skips cleanly rather than failing on an absence
+    that isn't drift."""
+    rep.section("molt-init.py embed consistency")
+    init_path = os.path.join(root, "molt-init.py")
+    if not os.path.isfile(init_path):
+        print("  (no molt-init.py in this root -- skipped, opt-in)")
+        return
+    init_text = read(init_path)
+    any_sibling_present = any(
+        os.path.isfile(os.path.join(root, rel)) for rel in INIT_EMBED_MAP.values()
+    )
+    if not any_sibling_present:
+        print("  (molt-init.py present but none of its embedded siblings are -- "
+              "nothing to compare, skipped)")
+        return
+    checked = 0
+    drifted = 0
+    for const_name, rel in INIT_EMBED_MAP.items():
+        sibling_path = os.path.join(root, rel)
+        if not os.path.isfile(sibling_path):
+            continue
+        m = re.search(
+            r"%s_B64\s*=\s*\"\"\"\n(.*?)\n\"\"\"" % re.escape(const_name),
+            init_text, re.S,
+        )
+        if not m:
+            rep.fail("molt-init.py has no embedded %s_B64 block for %s -- "
+                      "run scripts/build-molt-init.py" % (const_name, rel))
+            drifted += 1
+            continue
+        try:
+            embedded_bytes = base64.b64decode("".join(m.group(1).split()))
+        except (ValueError, TypeError) as exc:
+            rep.fail("molt-init.py's %s_B64 block for %s doesn't decode as base64: %s"
+                      % (const_name, rel, str(exc)[:80]))
+            drifted += 1
+            continue
+        with open(sibling_path, "rb") as f:
+            real_bytes = f.read()
+        checked += 1
+        if embedded_bytes != real_bytes:
+            rep.fail(
+                "molt-init.py's embedded copy of %s is stale (doesn't byte-match the "
+                "real file) -- run scripts/build-molt-init.py to resync" % rel
+            )
+            drifted += 1
+    if checked and not drifted:
+        rep.ok("molt-init.py's %d embedded file(s) byte-match their real siblings" % checked)
+
+
 def find_mirror_dir(root, explicit):
     if explicit:
         return explicit if os.path.isdir(explicit) else None
@@ -1080,6 +1162,7 @@ def main(argv):
         check_git_anchor,
         check_index_sections,
         check_handoffs,
+        check_init_embed_consistency,
         lambda r, rp: check_mirror(r, rp, explicit_mirror),
     )
     for check in checks:

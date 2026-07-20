@@ -9,6 +9,7 @@ reading `decisions.md` top to bottom by default. (Progressive disclosure; see
 
 | Date | Type | Title | Gist | ~tokens |
 |---|---|---|---|---|
+| 2026-07-20 | build | Made molt-init.py fully self-contained, and added a check that catches it going stale | molt-init.py now embeds its own framework files as base64, so copying just that one file bootstraps the whole setup with nothing else present; added check_init_embed_consistency to catch the embed going stale. | ~555 |
 | 2026-07-20 | fix | Fixed a placeholder-detection false positive, found by this project's own log tripping its own check | The "YYYY-MM-DD still present" check false-positived on prose mentioning the string; fixed to check real entry/row dates only, not a blind substring search. | ~285 |
 | 2026-07-20 | build | Built molt-init.py, and closed the concurrent-edit gap with union merge + a conflict-marker check | One-command scaffold for new adopters (fixed a real AGENTS.md drift bug found while testing it); union-merge for concurrent decisions.md edits + a conflict-marker check that runs first. | ~570 |
 | 2026-07-20 | build | Made verification mandatory (pre-commit hook + CI) and fixed a real nested-repo bug in the git anchor | Added .githooks/pre-commit + GitHub Actions blocking drift; fixed check_git_anchor silently no-oping when Molt's root isn't the git top-level. | ~520 |

@@ -33,7 +33,17 @@ VERDICT: TRUSTWORTHY   9 pass / 0 warn / 0 fail
 index, log, and mirror all tell the same story
 ```
 
-## The 60-second install
+## The one-command install, straight from GitHub
+
+No cloning, no download step, nothing to check out first. Paste this into a terminal (or into a Claude Code / Cowork session) pointed at the folder you want Molt set up in:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/<you>/molt/main/molt-init.py | python3 - /path/to/your/project
+```
+
+That single command pulls down `molt-init.py` and runs it immediately. It carries its own copies of everything Molt needs baked in, so this one file, run once, creates the whole system: the audit script, the memory files, the git hook, the CI workflow, all of it, then runs the audit and prints TRUSTWORTHY. Nothing else needs to be on disk first.
+
+## Cloning it instead
 
 ```sh
 git clone https://github.com/<you>/molt && cd molt

@@ -9,6 +9,7 @@ reading `decisions.md` top to bottom by default. (Progressive disclosure; see
 
 | Date | Type | Title | Gist | ~tokens |
 |---|---|---|---|---|
+| 2026-07-20 | build | Added CONTRIBUTING.md and linked it from README | Contributor guide: bug reports, PR checklist matching what CI checks, and an explicit "won't be merged" list (no dependencies, no network calls). | ~270 |
 | 2026-07-20 | build | Rewrote README.md for GitHub discoverability and beginner clarity, and fixed a real leak in install.sh | Badges, real captured demo output, plain-English use cases, updated file tree, adversarial-benchmark callout; fixed install.sh copying this project's own real decision log into adopters' projects. | ~590 |
 | 2026-07-20 | build | Made molt-init.py's TARGET_DIR optional, defaulting to the current directory, for a true GitHub copy-paste one-liner | curl-pipe-to-python now works with zero arguments, sets up in the current directory; README shows the real one-liner. | ~275 |
 | 2026-07-20 | build | Made molt-init.py fully self-contained, and added a check that catches it going stale | molt-init.py now embeds its own framework files as base64, so copying just that one file bootstraps the whole setup with nothing else present; added check_init_embed_consistency to catch the embed going stale. | ~555 |

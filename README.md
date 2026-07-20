@@ -169,7 +169,7 @@ python3 molt-init.py /path/to/your/project   # same installer, run from a full c
 
 ## Contributing
 
-Issues and PRs welcome. If you find a way to fool `molt-verify.py`, that's the most valuable bug report you can file, add it as a permanent adversarial case in `benchmarks/adversarial/run.py` and it protects everyone who adopts Molt afterward.
+Issues and PRs welcome. If you find a way to fool `molt-verify.py`, that's the most valuable bug report you can file, add it as a permanent adversarial case in `benchmarks/adversarial/run.py` and it protects everyone who adopts Molt afterward. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 ## License
 

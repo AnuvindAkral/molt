@@ -3,36 +3,40 @@
 ### The memory your AI agent can't fake.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Zero dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](#why-its-built-the-way-it-is)
-[![Python 3, stdlib only](https://img.shields.io/badge/python-3%2C%20stdlib%20only-3776AB)](#why-its-built-the-way-it-is)
+[![Zero dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](#why-it-works-the-way-it-does)
+[![Python 3, stdlib only](https://img.shields.io/badge/python-3%2C%20stdlib%20only-3776AB)](#why-it-works-the-way-it-does)
 [![Self-auditing](https://img.shields.io/badge/self--auditing-43%2F43%20adversarial%20cases-success)](#the-part-nobody-else-does-it-tests-itself)
-[![Works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Cowork%20%7C%20Cursor%20%7C%20Copilot%20%7C%20Aider-orange)](#use-it-with)
+[![Works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Cowork%20%7C%20Cursor%20%7C%20Copilot%20%7C%20Aider-orange)](#works-with-whatever-you-already-use)
 
-**One command. Zero dependencies. Your AI agent (Claude Code, Cursor, Copilot, whatever you use) remembers everything, correctly, forever, and proves it isn't lying about it.**
+**Right now, your AI agent's memory is just something it tells you. There's no way to check if it's true. Molt fixes that: one command gives your agent a memory made of plain files, and a built-in checker that proves the memory is honest, in order, and hasn't been quietly changed.**
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AnuvindAkral/molt/main/molt-init.py | python3 -
 ```
 
-Copy that. Paste it into a terminal, or straight into a Claude Code / Cowork session, wherever your project lives. Hit enter. You now have a memory system for your AI agent that survives model swaps, never silently drifts, and audits itself for tampering, hallucination, and lies. Nothing else to install. Read on for what that actually means, in plain English.
+Copy that line. Paste it into a terminal, or straight into a Claude Code / Cowork session, in whatever folder your project lives in. Press enter. That's the entire setup. Keep reading for what you just got, in plain words.
 
 ---
 
-## The problem this solves
+## The problem, in one sentence
 
-You've been working with an AI coding agent for weeks. It knows your codebase's quirks, the decisions you made and why, the conventions your team settled on. Then one of these happens:
+**AI agents forget things, or worse, they say they remember something that isn't true, and you have no way to check.**
 
-- **The model gets upgraded or swapped.** All that accumulated context lives in one model's weights and conversation history. New model, new session: you're explaining everything from scratch again.
-- **You come back after a break.** A week off, a new teammate, a new agent session. Nobody remembers what was decided or why, and nothing forces the agent to check.
-- **Your agent tells you it "already handled that."** Maybe it did. Maybe it's confidently wrong. There's no way to check, because nothing about most agent memory is verifiable, it's just text the model asserts is true.
+Think about how this actually shows up:
 
-Molt fixes all three. It puts your agent's judgment into plain text files you own (not a database, not a vendor's servers), and it comes with a built-in checker that mechanically proves those files are internally consistent, in order, and haven't been quietly altered. If something's wrong, it fails loudly instead of staying quiet.
+- You spend an hour teaching your agent the quirks of your project. Tomorrow, or the moment you switch models, that hour is gone. You start over.
+- You come back after a week off. A new session, maybe a new teammate. Nobody, and nothing, remembers what was decided or why.
+- Your agent says "I already fixed that." Maybe it did. Maybe it's just confidently wrong. There is no button to press that tells you which.
 
-Every other AI-memory project competes on **capacity**: bigger context windows, vector search, knowledge graphs. Molt competes on **trust**: a memory you can actually believe. That's a different, and mostly unaddressed, problem.
+None of this is really an "AI" problem. It's a **trust** problem: memory that can't be checked isn't memory, it's just a claim. Every other memory tool out there tries to make the claim bigger (more context, smarter search, fancier retrieval). Molt does something different: it makes the claim provable.
 
-## See it run
+## What Molt actually does
 
-This is real output from a fresh install, not a mockup:
+It gives your AI agent memory made of plain text files on your own computer, not a database, not someone else's server. Then it hands you a small script that checks those files the way an auditor checks a ledger: does everything add up, is the order right, has anything been quietly rewritten. If yes, it says so clearly. If no, it fails loudly instead of staying quiet. That's the whole idea.
+
+## See it for real
+
+This is actual output from a real, fresh install. Nothing here is staged:
 
 ```
 $ curl -fsSL https://raw.githubusercontent.com/AnuvindAkral/molt/main/molt-init.py | python3 -
@@ -68,117 +72,139 @@ molt-init.py embed consistency     PASS  embedded copies byte-match the real fil
 VERDICT: TRUSTWORTHY (with notes)   14 pass / 1 warn / 0 fail
 ```
 
-Every `PASS` above is a real, mechanical check, not a model's opinion of itself.
+Every line that says `PASS` is a real check that ran against real files, not a model describing itself.
 
-## Who this is for (zero to hero, no jargon)
+## Real situations this actually fixes
 
-You don't need to know what a hash chain or an append-only log is to get value from this. If any of these sound like you, Molt is for you:
+These aren't hypothetical. They're the exact reasons this exists.
 
-- **"I just started using Claude Code / Cursor / Copilot and want it to actually remember things."** Run the one-liner above in your project. Done, you have memory now.
-- **"My AI agent keeps re-asking things I already told it."** That's because the answer lived in a chat window, not a file. Molt moves it into a file the agent reads every session.
-- **"I switched models (or my team uses different tools) and lost all context."** Molt's files are plain markdown, read natively by Claude Code and Cowork, and mirrored automatically for Cursor, Copilot, Aider, Windsurf, Zed, and Gemini CLI. Switch tools, keep your memory.
-- **"I don't trust that my agent actually did what it says it did."** Every real decision gets logged with its reasoning, and a script proves the log wasn't quietly edited or contradicted later.
-- **"I'm on a team and we all use AI agents on the same repo."** Molt handles two people (or two agent sessions) appending memory at the same time without a manual merge fight, and blocks a commit that would corrupt the log.
+**"I switched from one AI model to another and lost everything."** Your agent's understanding of your project lived inside a chat history tied to one model. Swap models, and it's gone. Molt keeps that understanding in files your next agent, on any model, reads on day one.
 
-You go from a brand-new Claude/Cursor setup to a fully verified, tamper-evident memory system in one command. Zero to hero, one paste.
+**"My agent keeps asking me things I already explained."** That's what happens when the answer only ever existed in a conversation that scrolled away. Molt puts the answer in a file the agent is supposed to check before asking again.
+
+**"I came back to this project after a few weeks and had no idea where things stood."** One glance at `memory/INDEX.md` tells you, and any new agent session, exactly what was decided and why, without reading a single old chat log.
+
+**"My agent told me it finished something, and it hadn't."** With Molt, real decisions get written down with the actual reasoning behind them, and a script checks that record hasn't been silently rewritten to match a story that isn't true.
+
+**"Two of us (or two of our agents) are working on the same project and stepping on each other."** Two people, or two agent sessions, can add to the memory at the same time without a messy conflict. Molt is built so those additions merge cleanly instead of overwriting each other.
+
+**"I want my whole team's AI agents to behave the same way, whatever tool each person uses."** One person's on Claude Code, another's on Cursor, a third's on Copilot. Molt keeps the same rules file byte-for-byte identical across all of them, automatically.
+
+## Why this can be a genuine game changer
+
+Not because it's clever. Because of what it removes: the need to just take your AI agent's word for it.
+
+Right now, almost everyone using an AI coding agent has felt at least one of the moments above. Most people shrug and re-explain things, or quietly stop fully trusting what the agent tells them. Molt turns "trust me" into "check me." That's a small idea with a big effect once you've actually felt the alternative: an agent memory that's provably not lying is worth more than one that's merely bigger.
+
+And the setup cost for that is one line pasted into a terminal. That gap, huge payoff, tiny effort, is exactly what makes something worth sharing with the next person who complains about their AI agent forgetting things.
+
+## Zero to hero, in one command
+
+You don't need to understand anything below this line to get the benefit. If you can copy and paste, you can set this up:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/AnuvindAkral/molt/main/molt-init.py | python3 -
+```
+
+That single line builds the entire system: the memory files, the checker script, a safety hook, a CI check, all of it, right there in your project. Then it runs the checker itself and tells you the result. No accounts, no signup, no dependency to install first.
 
 ## What's actually in the box
 
 ```
 your-project/
-├── CLAUDE.md                        the rules Claude Code / Cowork read every session
-├── AGENTS.md                        the same rules, byte-identical, for every other tool
-├── molt-verify.py                   ⭐ the self-audit: 13 checks, zero dependencies
-├── molt-chain-append.py             adds tamper-evident hashes to new entries (opt-in)
-├── molt-redact.py                   the sanctioned way to remove sensitive content
-├── .githooks/pre-commit             blocks a commit if the audit fails
-├── .github/workflows/molt-verify.yml   blocks a PR if the audit fails
+├── CLAUDE.md                        the rules your AI agent reads every session
+├── AGENTS.md                        the same rules, identical, for every other tool
+├── molt-verify.py                   ⭐ the checker: 13 tests, zero dependencies
+├── molt-chain-append.py             adds tamper-proof fingerprints to entries (opt-in)
+├── molt-redact.py                   the proper way to remove something sensitive
+├── .githooks/pre-commit             stops a bad commit before it happens
+├── .github/workflows/molt-verify.yml   stops a bad pull request before it merges
 └── memory/
-    ├── INDEX.md                     cheap-to-read table of what exists (progressive disclosure)
-    ├── decisions.md                 append-only decision log, one real reason per entry
-    └── handoffs/                    session handoff notes, only opened when resuming one
+    ├── INDEX.md                     a short table of what exists, cheap to read
+    ├── decisions.md                 the real decision log, one honest reason per entry
+    └── handoffs/                    notes for picking up a session where it left off
 ```
 
-Everything above gets created by the single `molt-init.py` script, which carries its own copies of all of it baked in. No other file needs to exist first; that's the whole point of the one-liner.
+All of it comes from running one file, `molt-init.py`. Nothing else needs to exist first, that's the entire point of the one-liner above.
 
 ## The part nobody else does: it tests itself
 
-`molt-verify.py` runs 13 mechanical checks: the index matches the log exactly, entries are well-formed and newest-first, no merge-conflict markers snuck into a commit, cross-tool files stay byte-identical, a hash chain (if adopted) verifies unbroken from genesis to newest, a local git-anchor check flags a rewritten history before it's committed over, and more.
+`molt-verify.py` runs 13 checks: does the index match the log exactly, is every entry complete and in the right order, are there any leftover merge-conflict markers, do the cross-tool files still match, does the tamper-proof fingerprint chain (if you turned it on) still hold together, and more.
 
-This isn't asserted, it's proven with a permanent adversarial benchmark: **43 simulated attacks and corruptions** (a tampered hash, a phantom log entry, a forged date, a stealthily edited mirror, an unresolved merge conflict, a stale embedded copy, and more), each checked against the exact expected verdict, at both small and large scale (300 and 3,000 synthetic entries). All 43 pass. Every time this project adds a feature, it adds the adversarial case that would have caught the bug that motivated it.
+Here's the part that matters more than the list: this isn't just claimed, it's tested. There's a permanent set of **43 simulated attacks**, a faked fingerprint, a fake log entry, a forged date, a secretly edited backup copy, an unresolved merge conflict, and more, each one checked against exactly what the result should be, run at both a small scale and a scale of 3,000 entries. All 43 are caught, every time. Whenever a new problem gets found and fixed, it gets added permanently to this list, so it can never quietly come back.
 
-Wire the audit in so drift can't sneak past you:
+Turn on the safety net so a mistake can't slip through:
 
 ```sh
-git config core.hooksPath .githooks   # blocks a bad commit locally, one-time setup
-# .github/workflows/molt-verify.yml already blocks a bad PR in CI
+git config core.hooksPath .githooks   # one-time setup, blocks a bad commit locally
+# the GitHub Actions workflow already blocks a bad pull request automatically
 ```
 
-## Why it's built the way it is
+## Why it works the way it does
 
-**Rules vs. state.** `CLAUDE.md` holds only rules that don't change, so it stays short and cheap to read every session. Everything that changes lives in `memory/`. Mixing the two is what makes most `CLAUDE.md` files balloon into thousand-line context hogs.
+**Rules and facts are kept separate.** `CLAUDE.md` only holds things that don't change, so it stays short. Everything that does change lives in `memory/`. Mixing the two is why most AI rules files eventually turn into a giant, unreadable wall of text.
 
-**Progressive disclosure.** You don't read the whole decision log every session. You read a one-line-per-entry index, then open only the entry you actually need. This is the single biggest token saver as your memory grows.
+**You never read the whole history just to check one thing.** `memory/INDEX.md` is a short table. You glance at it, then open only the one entry you actually need. This is the biggest reason Molt stays cheap to use even as the memory grows.
 
-**Append-only truth.** Decisions are never rewritten, only superseded by newer entries. Your reasoning history stays intact and auditable, and there's a sanctioned tool (`molt-redact.py`) for the one legitimate case where something really does need to come out.
+**Nothing gets secretly rewritten.** Old decisions never get edited, only added to. If something really does need to be removed later, there's a dedicated, honest tool for that (`molt-redact.py`) instead of quietly deleting history.
 
-**Verification, not hope.** `molt-verify.py` mechanically checks that the index matches the log, the log is well-formed and newest-first, the hash chain (if adopted) is unbroken, and, if you keep a human-readable mirror (an Obsidian vault, a wiki), every mirrored file byte-matches its source. It exits non-zero on drift.
+**It checks instead of assuming.** `molt-verify.py` proves the files agree with each other and haven't been tampered with. It doesn't just hope they're fine.
 
 ## The bug that made this real
 
-The mirror check isn't hypothetical. While Molt was being built, a hand-written "mirror" copy of the decision log gained a sentence the real log never contained. It looked authoritative, so it would have been trusted. A byte-diff caught it; re-reading and assuming had not. The rule that came out of it, *never hand-edit a mirror, regenerate it from the source and verify*, is now enforced mechanically instead of remembered. That's the whole philosophy in one story: **good intentions drift; a check doesn't.**
+This isn't a hypothetical worry. While building Molt, a hand-copied backup of the decision log picked up a sentence that never existed in the real one. It looked completely normal. It would have been believed. A simple byte-by-byte comparison caught it; just reading it over again had not. The rule that came out of that moment, never hand-edit a copy, always regenerate it and check it, is the whole philosophy of this project in one sentence: **good intentions drift. A check doesn't.**
 
-## How it compares
+## How it stacks up
 
-| | typical `CLAUDE.md` | vector/graph agent memory | **Molt** |
+| | a typical AI rules file | vector/graph-based memory tools | **Molt** |
 |---|---|---|---|
-| Survives a model swap | sometimes | yes | **yes** |
-| Setup cost | none | database / service | **one command** |
-| Dependencies | none | many | **none (stdlib Python)** |
-| Detects its own drift / fabrication | no | no | **yes, mechanically** |
-| Tested against adversarial corruption | no | rarely | **yes, 43 cases, two scales** |
-| Readable & forkable by a human | yes | rarely | **yes** |
-| Right at massive autonomous scale (thousands of long-running sessions) | no | **yes** | no |
+| Survives switching models | sometimes | yes | **yes** |
+| Setup effort | none | a database or paid service | **one command** |
+| Extra software needed | none | usually a lot | **none, just Python** |
+| Can prove it isn't lying to you | no | no | **yes** |
+| Actually tested against fake corruption | no | rarely | **yes, 43 cases, two scales** |
+| Easy for a human to read and fork | yes | rarely | **yes** |
+| Built for thousands of long, fully autonomous agents | no | **yes** | no |
 
-Molt is deliberately the wrong tool if you're running thousands of long autonomous agent sessions; use a real graph- or embedding-backed memory then. It's the right tool for the enormous middle: individuals, teams, and startups who want AI-agent memory they can actually read, trust, and check.
+That last row matters: if you're running an enormous fleet of autonomous agents non-stop, you want a real database-backed memory system, not this. For everyone else, individuals, small teams, and startups who want to actually trust and read their AI agent's memory, this is built for exactly that.
 
-## Use it with
+## Works with whatever you already use
 
-Any agent that reads a root instructions file: **Claude Code**, **Cowork**, **Cursor**, **GitHub Copilot**, **Codex CLI**, **Gemini CLI**, **Aider**, **Windsurf**, **Zed**, or anything else in the growing list of AI coding agents. `CLAUDE.md` and `AGENTS.md` (the open cross-tool convention) are kept byte-identical automatically, so switching tools doesn't mean losing memory. Nothing here is locked to one vendor: it's markdown files and one stdlib Python script.
+Claude Code, Cowork, Cursor, GitHub Copilot, Codex CLI, Gemini CLI, Aider, Windsurf, Zed, or anything else that reads a rules file at the root of your project. `CLAUDE.md` and `AGENTS.md` (the shared convention most of these tools already understand) are kept perfectly identical automatically, so switching tools never means losing your memory. It's just markdown files and one small Python script, nothing here locks you into any one company's product.
 
-## FAQ
+## Questions people actually ask
 
-**Do I need git for this?** No. Everything works in a plain folder. If you *are* in a git repo, one extra check (the local tamper-evidence anchor) turns on automatically.
+**Do I need to know git for this?** No. It works in a plain folder. If you happen to be using git, one extra safety check turns on by itself.
 
-**Does this send my data anywhere?** No. No network calls, no telemetry, no accounts, no API keys. It's your files, on your disk, checked by a script you can read top to bottom in ten minutes.
+**Does any of my data leave my computer?** No. No network calls, no accounts, no tracking. Your files stay on your disk, and you can read the entire checking script yourself in about ten minutes.
 
-**Is `molt-verify.py` slow?** It reads a handful of markdown files. It's instant.
+**Is running the checker slow?** No, it reads a handful of small text files. It's instant.
 
-**What if I already have a `CLAUDE.md`?** The installer won't overwrite it. It reads your existing file and mirrors it into `AGENTS.md`, so nothing you've already written gets lost.
+**I already have a `CLAUDE.md`, will this overwrite it?** No. It reads what you already have and copies it, unchanged, into `AGENTS.md` so other tools see the same rules. Nothing you wrote gets lost.
 
-**I don't want the git hook / CI enforcement, just the memory files.** That's fine, both are optional add-ons; skip `git config core.hooksPath` and don't add the workflow file, and everything else still works.
+**Can I skip the safety hook and CI check and just use the memory files?** Yes, both are optional extras. Skip them and everything else still works exactly the same.
 
-## Want the deep-dive docs, or to browse/contribute to the source?
+## Want the deeper docs, or to look at the source?
 
-The one-liner above is all you need to *use* Molt. If you want the full rationale (`ARCHITECTURE.md`), the repeatable workflows (`PROTOCOLS.md`), or to poke at the adversarial benchmark yourself:
+The one-liner above is genuinely all you need to use Molt. If you'd rather read the full reasoning (`ARCHITECTURE.md`), the repeatable workflows (`PROTOCOLS.md`), or poke at the test suite yourself:
 
 ```sh
 git clone https://github.com/AnuvindAkral/molt && cd molt
-python3 molt-init.py /path/to/your/project   # same installer, run from a full checkout
+python3 molt-init.py /path/to/your/project
 ```
 
 ## Contributing
 
-Issues and PRs welcome. If you find a way to fool `molt-verify.py`, that's the most valuable bug report you can file, add it as a permanent adversarial case in `benchmarks/adversarial/run.py` and it protects everyone who adopts Molt afterward. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
+Issues and pull requests are welcome. The single most valuable thing you can do is try to trick `molt-verify.py` into saying everything's fine when it isn't. If you find a way, that's a real find, report it, or better, add it as a permanent test case so it protects everyone who uses this afterward. Full guide in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT. Use it, fork it, rename it, gut it, no attribution required (though a star is appreciated, it's how other people find this).
+MIT. Use it, fork it, rename it, take it apart, no credit required (though a star helps other people find it, which is the only reason to ask).
 
 Built by [Anuvind Akral](https://github.com/AnuvindAkral).
 
 ---
 
-<sub>**Repo description:** A self-verifying, dependency-free memory system for AI coding agents (Claude Code, Cursor, Copilot, Aider) that survives model changes and mechanically proves it isn't drifting, hallucinating, or lying, tested against 43 adversarial attacks.</sub>
+<sub>**Repo description:** A self-verifying, dependency-free memory system for AI coding agents (Claude Code, Cursor, Copilot, Aider) that survives model changes and mechanically proves it isn't drifting, hallucinating, or lying. Tested against 43 adversarial attacks.</sub>
 
 <sub>**Topics:** `claude-code` `claude` `ai-agents` `agent-memory` `cursor` `context-engineering` `llm` `llm-memory` `developer-tools` `cowork` `ai-coding-assistant` `prompt-engineering` `github-copilot` `aider` `windsurf` `open-source`</sub>

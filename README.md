@@ -6,6 +6,7 @@
 [![Zero dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](#why-it-works-the-way-it-does)
 [![Self-auditing](https://img.shields.io/badge/self--auditing-43%2F43%20adversarial%20cases-success)](#the-part-nobody-else-does-it-tests-itself)
 [![Works with](https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Cursor%20%7C%20Copilot%20%7C%20Aider-orange)](#works-with-whatever-you-already-use)
+[![Token-efficient](https://img.shields.io/badge/token%20use-minimal%2C%20by%20default-blueviolet)](#why-it-works-the-way-it-does)
 
 **Right now, your AI agent's memory is just something it tells you. There's no way to check if it's true. Molt fixes that: one command gives your agent a memory made of plain files, and a built-in checker that proves the memory is honest, in order, and hasn't been quietly changed.**
 
@@ -99,7 +100,7 @@ git config core.hooksPath .githooks   # one-time, blocks a bad commit locally
 
 **Rules and facts are kept separate.** `CLAUDE.md` only holds things that don't change, so it stays short. Everything that changes lives in `memory/`, which is why most AI rules files don't balloon into unreadable walls of text here.
 
-**You never read the whole history to check one thing.** `memory/INDEX.md` is a short table; you open only the one entry you need.
+**Low token use isn't a setting, it's the default.** You never read the whole history to check one thing: `memory/INDEX.md` is a short table, you open only the one entry you actually need. This isn't just a suggestion either, `molt-verify.py` mechanically checks that INDEX.md's size estimates are honest and that no single entry has quietly grown past its budget, so the system can't drift into being expensive without you finding out.
 
 **Nothing gets secretly rewritten.** Old decisions never get edited, only added to. `molt-redact.py` is the honest, sanctioned way to remove something later.
 

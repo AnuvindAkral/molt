@@ -72,16 +72,23 @@ def build_synthetic_root(n):
     entries_desc = list(reversed(entries))  # newest first
 
     log_lines = ["# Decision log\n", "> Synthetic benchmark log, append-only, newest first.\n\n"]
+    real_tokens = []  # per-entry estimate matching molt-verify.py's own formula,
+                       # so the INDEX.md ~tokens column starts honest instead of
+                       # a flat guess that would itself trip check_token_efficiency
+                       # on a supposedly clean control case
     for i, (date, title) in enumerate(entries_desc):
-        log_lines.append(entry_block(date, title, i))
+        block = entry_block(date, title, i)
+        log_lines.append(block)
         log_lines.append("\n")
+        body = block.split("\n", 1)[1] if "\n" in block else ""
+        real_tokens.append(round(len(body.split()) * 1.35))
     log_lines.append("<!-- Add new entries above this line. Keep the oldest at the bottom. -->\n")
     with open(os.path.join(root, "memory", "decisions.md"), "w", encoding="utf-8") as f:
         f.writelines(log_lines)
 
     index_lines = ["# Memory index\n\n", "| Date | Type | Title | ~tokens |\n", "|---|---|---|---|\n"]
-    for date, title in entries_desc:
-        index_lines.append("| %s | build | %s | ~120 |\n" % (date, title))
+    for (date, title), tok in zip(entries_desc, real_tokens):
+        index_lines.append("| %s | build | %s | ~%d |\n" % (date, title, tok))
     # empty handoffs table + domain buckets heading, mirroring the real project's
     # convention, so check_index_sections and check_handoffs have something to check
     index_lines.append("\n## handoffs/\n\n")
@@ -518,6 +525,39 @@ def inject_hash_chain_incomplete(root):
     open(p, "w", encoding="utf-8").writelines(lines)
 
 
+def inject_index_token_drift(root):
+    """The FIRST entry's INDEX.md ~tokens estimate is forced down to ~5,
+    far below its real size. Progressive disclosure relies on this number
+    being honest; a session deciding "cheap to open" based on a lie defeats
+    the whole point. Found via direct measurement against this project's own
+    INDEX.md, not suspicion: every existing estimate was 30-50% low before
+    this check existed. Uses a regex on the first data row rather than a
+    hardcoded value, since build_synthetic_root now computes a real,
+    per-entry estimate instead of a flat placeholder."""
+    p = os.path.join(root, "memory", "INDEX.md")
+    text = open(p, encoding="utf-8").read()
+    text2, count = re.subn(r"(\| Date \| Type \| Title \| ~tokens \|\n\|---\|---\|---\|---\|\n\|[^\n]*\| )~[0-9]+( \|)",
+                            r"\1~5\2", text, count=1)
+    assert count == 1, "adversarial injector itself is broken: no first data row found to alter"
+    assert text2 != text
+    open(p, "w", encoding="utf-8").write(text2)
+
+
+def inject_oversized_entry(root):
+    """One entry's Decision field balloons past the verbosity budget. Not a
+    correctness problem (still well-formed, still hashable), a token-cost
+    problem: progressive disclosure stops paying off once a single lookup
+    costs hundreds of extra tokens nobody accounted for."""
+    p = os.path.join(root, "memory", "decisions.md")
+    text = open(p, encoding="utf-8").read()
+    needle = "Synthetic decision body number 0 for benchmark purposes, kept short."
+    assert needle in text, "adversarial injector itself is broken: needle not found"
+    padding = " Extra padding word." * 400
+    text2 = text.replace(needle, needle + padding, 1)
+    assert text2 != text
+    open(p, "w", encoding="utf-8").write(text2)
+
+
 def inject_gitignore_negation_pattern(root):
     """.gitignore contains a '!' negation pattern, which check_gitignore_sanity
     deliberately does not evaluate (a real gitignore engine is a large
@@ -580,6 +620,8 @@ CASES = [
     ("nested_apex_pair_drift", inject_nested_apex_pair_drift, 1, "DRIFT DETECTED", CASES_PLAIN),
     ("nested_memory_named_dir_shadow", inject_nested_memory_named_dir_shadow, 1, "DRIFT DETECTED", CASES_PLAIN),
     ("gitignore_negation_pattern", inject_gitignore_negation_pattern, 0, "TRUSTWORTHY (with notes)", CASES_PLAIN),
+    ("index_token_drift", inject_index_token_drift, 0, "TRUSTWORTHY (with notes)", CASES_PLAIN),
+    ("oversized_entry", inject_oversized_entry, 0, "TRUSTWORTHY (with notes)", CASES_PLAIN),
     ("git_anchor_control_committed", None, 0, "TRUSTWORTHY", CASES_CHAINED_GIT),
     ("git_anchor_laundering_attack", inject_git_anchor_laundering_attack, 1, "DRIFT DETECTED", CASES_CHAINED_GIT),
     ("git_anchor_legitimate_addition", inject_git_anchor_legitimate_addition, 0, "TRUSTWORTHY", CASES_CHAINED_GIT),

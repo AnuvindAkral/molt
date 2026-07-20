@@ -24,6 +24,10 @@ It checks, in order:
      backend/, frontend/, a subsystem) never redeclare the root-only tags
      <never>/<verification>/<before_declaring_done>, and a domain's own
      CLAUDE.md and AGENTS.md pair byte-match each other;
+  7b. INDEX.md's ~tokens estimate for each entry is honest (within tolerance
+     of a freshly computed estimate), and no single entry has grown past a
+     verbosity budget -- progressive disclosure only works if the number a
+     session uses to decide "is this cheap to open" is actually true;
   8. if any entry carries a **Hash:** field (opt-in), every entry must, and
      the chain, sha256(entry + previous entry's hash), must verify oldest to
      newest -- altering any historical entry invalidates every hash after it,
@@ -191,6 +195,98 @@ def parse_index_rows(text):
             title = cells[2] if len(cells) >= 4 else cells[-1]
             rows.append((first, norm(title)))
     return rows
+
+
+def parse_index_token_estimates(text):
+    """Return {(date, title): claimed_tokens_int} for rows whose ~tokens cell
+    parses as a number (with or without a leading '~'). Convention: | Date |
+    Type | Title | ~tokens |."""
+    out = {}
+    for line in text.splitlines():
+        s = line.strip()
+        if not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        first = cells[0]
+        if not (ISO_DATE.match(first) or first == PLACEHOLDER_DATE):
+            continue
+        title = norm(cells[2])
+        m = re.match(r"~?\s*([0-9]+)", cells[3])
+        if m:
+            out[(first, title)] = int(m.group(1))
+    return out
+
+
+def estimate_tokens(text):
+    """Rough, dependency-free token estimate: ~1.35 tokens per whitespace-
+    separated word, a reasonable approximation for English prose. Not a real
+    tokenizer -- pulling one in would add a dependency for a number whose
+    only job is to help a session decide whether opening an entry is cheap,
+    not to be exact."""
+    words = len(text.split())
+    return round(words * 1.35)
+
+
+ENTRY_TOKEN_BUDGET = 600          # WARN threshold: a single entry this large
+                                  # undermines progressive disclosure's whole
+                                  # point, one "cheap lookup" stops being cheap
+INDEX_TOKEN_DRIFT_RATIO = 0.25    # WARN if claimed vs actual differ by more
+INDEX_TOKEN_DRIFT_ABS = 50        # than both this fraction AND this many
+                                  # tokens (avoids noise on tiny entries)
+
+
+def check_token_efficiency(root, rep):
+    """Progressive disclosure (see ARCHITECTURE.md) only works if INDEX.md's
+    ~tokens column is honest: a session decides what to open based on that
+    number. Found by direct measurement, not suspicion: every existing
+    estimate in this project's own INDEX.md was 30-50% below the entry's real
+    size, silently undercounting the true cost of a lookup. Two checks: (1)
+    an entry whose estimate has drifted from a freshly computed one beyond a
+    tolerance; (2) a single entry that has grown past ENTRY_TOKEN_BUDGET,
+    a verbosity-creep signal independent of whether the index agrees with it."""
+    rep.section("token efficiency (progressive disclosure honesty)")
+    dpath = os.path.join(root, "memory", "decisions.md")
+    ipath = os.path.join(root, "memory", "INDEX.md")
+    if not (os.path.isfile(dpath) and os.path.isfile(ipath)):
+        return
+    entries = parse_decisions(read(dpath))
+    claimed = parse_index_token_estimates(read(ipath))
+    if not entries:
+        return
+
+    drifted = []
+    oversized = []
+    for e in entries:
+        actual = estimate_tokens(e["body"])
+        if actual > ENTRY_TOKEN_BUDGET:
+            oversized.append((e["title"][:55], actual))
+        key = (e["date"], norm(e["title"]))
+        if key not in claimed:
+            continue
+        claim = claimed[key]
+        diff = abs(actual - claim)
+        if claim == 0:
+            continue
+        if diff > INDEX_TOKEN_DRIFT_ABS and diff / claim > INDEX_TOKEN_DRIFT_RATIO:
+            drifted.append((e["title"][:55], claim, actual))
+
+    for title, claim, actual in drifted:
+        rep.warn(
+            "INDEX.md claims ~%d tokens for '%s' but it's actually ~%d -- "
+            "progressive disclosure only works if this number is honest, refresh it"
+            % (claim, title, actual)
+        )
+    for title, actual in oversized:
+        rep.warn(
+            "entry '%s' is ~%d tokens, over the %d-token verbosity budget -- "
+            "a single lookup stops being cheap once entries grow like this"
+            % (title, actual, ENTRY_TOKEN_BUDGET)
+        )
+    if not drifted and not oversized:
+        rep.ok("all %d entr%s' index estimates are accurate and within the verbosity budget"
+               % (len(entries), "y" if len(entries) == 1 else "ies"))
 
 
 def canonical_entry_text(e):
@@ -830,6 +926,7 @@ def main(argv):
         check_gitignore_sanity,
         check_nested_apex_consistency,
         check_decisions_and_index,
+        check_token_efficiency,
         check_hash_chain,
         check_git_anchor,
         check_index_sections,

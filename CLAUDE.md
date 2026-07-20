@@ -57,3 +57,7 @@ Before calling any change to this system finished: did a real decision get logge
 <memory_boundary>
 This file holds stable rules only. Facts, decisions, and things that happened live in `memory/`. Promotion: a fact relevant for 6+ weeks becomes a rule here. Pruning: a rule that hasn't fired in 3 months gets removed. Review monthly.
 </memory_boundary>
+
+<token_efficiency>
+Progressive disclosure only works if the numbers it relies on are honest and the things it points to stay small. Keep a decision entry tight; if it needs long justification, put the detail in `memory/handoffs/` or a linked file and keep the entry itself lean. `molt-verify.py` warns if an entry has grown past its verbosity budget, or if `memory/INDEX.md`'s `~tokens` estimate has drifted from the entry's real size; either warning means refresh the estimate or tighten the entry, not ignore it. The apex files (this one, `AGENTS.md`) are read every session; everything under `<references>` is read only on demand, by design, keep it that way.
+</token_efficiency>

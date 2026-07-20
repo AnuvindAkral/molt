@@ -13,10 +13,51 @@ It checks, in order:
   2. the log is newest-first and every entry is well-formed;
   3. the append-only anchor is still in place;
   4. the apex file hasn't bloated past its own stated budget;
-  5. (the one nobody else does) if you keep a human-readable MIRROR of these
+  5. if AGENTS.md exists (the open cross-tool convention read natively by
+     Cursor, Copilot, Codex CLI, Gemini CLI, Aider, Windsurf, and Zed), it
+     byte-matches CLAUDE.md, so every tool sees the same rules instead of two
+     copies quietly drifting apart;
+  6. if .gitignore exists, CLAUDE.md/AGENTS.md/memory/ are never accidentally
+     excluded from it (the shared rules silently stop syncing), and if a
+     personal CLAUDE.local.md exists, it IS excluded (no personal leakage);
+  7. nested CLAUDE.md/AGENTS.md files in domain subdirectories (a monorepo's
+     backend/, frontend/, a subsystem) never redeclare the root-only tags
+     <never>/<verification>/<before_declaring_done>, and a domain's own
+     CLAUDE.md and AGENTS.md pair byte-match each other;
+  8. if any entry carries a **Hash:** field (opt-in), every entry must, and
+     the chain, sha256(entry + previous entry's hash), must verify oldest to
+     newest -- altering any historical entry invalidates every hash after it,
+     even with no mirror kept. See molt-chain-append.py to adopt this. IMPORTANT
+     BOUNDARY: this proves the log is internally self-consistent, not that no
+     one who understands the mechanism rewrote it -- see check 9 and
+     ARCHITECTURE.md's "What the hash chain does and doesn't prove";
+  9. (local, best-effort, opt-in) if this is a git repository, the working
+     copy of memory/decisions.md is compared against the version at the last
+     commit (HEAD); an uncommitted change to anything other than new entries
+     added on top gets flagged before it can be committed over. No network,
+     no push required, matches Molt's own dependency-free design. This is a
+     mitigation for check 8's limitation, not a replacement for it: a rewrite
+     that has ALREADY been committed can't be caught this way, that needs a
+     signing key or a remote with branch protection;
+  10. INDEX.md's own structural sections (handoffs/, domain buckets) haven't
+     silently vanished;
+  11. if real handoff files exist in memory/handoffs/, INDEX.md's handoffs
+      table lists exactly those files, no phantoms, no gaps;
+  12. (the one nobody else does) if you keep a human-readable MIRROR of these
      files, every mirror byte-matches its source -- catches a mirror that has
      quietly gained, lost, or invented a line. This exact check caught a
      fabricated sentence during Molt's own development.
+
+The log parser also refuses to treat a '## '-looking line as a new entry unless
+it's preceded by a blank line, so a heading pasted or written inside an entry's
+own body (a quoted code review, a copied doc excerpt) can't silently split or
+merge real entries. Found by the adversarial benchmark, not by inspection.
+
+TRUSTWORTHY means structural integrity: the files agree with each other and
+haven't been silently altered by the mechanisms this script knows how to
+check. It does NOT mean the content is honest, accurate, or the right
+decision; a well-formed, internally consistent log can still contain a lie a
+human typed on purpose. See ARCHITECTURE.md for the full boundary.
 
 Exit code 0 = trustworthy (failures = 0). Exit code 1 = drift detected.
 Warnings never fail the build; failures do. Wire it into CI or a pre-commit hook.
@@ -27,8 +68,11 @@ Usage:
     python3 molt-verify.py --no-color
 """
 
+import fnmatch
+import hashlib
 import os
 import re
+import subprocess
 import sys
 
 REQUIRED_FIELDS = ("Decision:", "Reasoning:", "Reversible:", "Review:")
@@ -36,7 +80,18 @@ APPEND_ANCHOR = "Add new entries above this line"
 APEX_LINE_BUDGET = 300          # matches CLAUDE.md's own stated target
 MIRROR_DIR_CANDIDATES = ("mirror", "Mirror", "Obsidian-Vault", "vault")
 PLACEHOLDER_DATE = "YYYY-MM-DD"
-ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# Hash-chaining: each entry's optional **Hash:** field commits to that entry's
+# own content plus the previous (older) entry's hash, SHA-256 hex, so altering
+# any historical entry invalidates every hash from that point forward, the
+# same principle as the IETF's 2026 Agent Audit Trail draft. Genesis is the
+# hash "before" the oldest entry in the file.
+CHAIN_GENESIS = "0" * 64
+# [0-9], not \d: Python's \d matches any Unicode decimal digit, including
+# lookalikes like full-width digits (１２３). Those pass \d{4}-\d{2}-\d{2} but
+# sort as a completely different string, so a forged date built from them can
+# make an old or fake entry always compare as "newest" without ever tripping
+# the newest-first check. [0-9] only matches literal ASCII digits.
+ISO_DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 
 
 # ------------------------------------------------------------------ reporting
@@ -79,13 +134,24 @@ def norm(s):
 
 
 def parse_decisions(text):
-    """Return a list of entries: {date, title, body, fields, order_index}."""
+    """Return a list of entries: {date, title, body, fields, order_index}.
+
+    A line only starts a new entry if it looks like a '## ' heading AND is
+    preceded by a blank line (or is the very first line). Every real entry in
+    this file's own convention is separated from the previous one by a blank
+    line, so this guard is free for well-formed logs. Its job is to stop a
+    '## something' line pasted or written *inside* an entry's own body, for
+    example a quoted code review or a copied doc excerpt in a Reasoning field,
+    from being misread as a second entry and silently splitting or merging
+    real content. Caught during the adversarial benchmark, not by inspection.
+    """
     entries = []
     lines = text.splitlines()
     current = None
+    prev_blank = True  # start of file counts as "preceded by blank"
     for line in lines:
         m = re.match(r"^##\s+(.*\S)\s*$", line)
-        if m:
+        if m and prev_blank:
             if current:
                 entries.append(current)
             heading = m.group(1).strip()
@@ -98,6 +164,7 @@ def parse_decisions(text):
             current = {"date": date, "title": title, "body": ""}
         elif current is not None:
             current["body"] += line + "\n"
+        prev_blank = (line.strip() == "")
     if current:
         entries.append(current)
     for i, e in enumerate(entries):
@@ -124,6 +191,330 @@ def parse_index_rows(text):
             title = cells[2] if len(cells) >= 4 else cells[-1]
             rows.append((first, norm(title)))
     return rows
+
+
+def canonical_entry_text(e):
+    """Deterministic text hashed for one entry: its own required-field lines,
+    trailing whitespace stripped, blank lines dropped, in file order, with any
+    existing **Hash:** line excluded (an entry can't hash its own hash)."""
+    lines = []
+    for line in e["body"].splitlines():
+        s = line.rstrip()
+        if not s:
+            continue
+        if s.lstrip().startswith("**Hash:**"):
+            continue
+        lines.append(s)
+    return "\n".join(lines)
+
+
+def entry_hash(e, prev_hash):
+    text = canonical_entry_text(e) + "\n" + prev_hash
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def parse_stored_hash(e):
+    m = re.search(r"\*\*Hash:\*\*\s*([0-9a-f]{64})", e["body"])
+    return m.group(1) if m else None
+
+
+def check_hash_chain(root, rep):
+    """If any entry carries a **Hash:** field, every entry must, and the
+    chain must verify oldest to newest: this entry's hash must equal
+    sha256(its own content + the previous entry's hash). A log with no Hash
+    fields at all is untouched, hash-chaining is opt-in, same as the mirror
+    check. A log with SOME entries hashed and others not has an incomplete
+    chain, which is treated as a failure, not a warning: a half-adopted
+    tamper-evidence scheme gives false confidence."""
+    rep.section("hash chain (tamper-evidence)")
+    dpath = os.path.join(root, "memory", "decisions.md")
+    if not os.path.isfile(dpath):
+        return
+    entries = parse_decisions(read(dpath))
+    if not entries:
+        return
+    has_any_hash = any(parse_stored_hash(e) is not None for e in entries)
+    if not has_any_hash:
+        print("  (no Hash fields found -- hash-chaining not adopted, optional, skipped)")
+        return
+
+    missing = [e for e in entries if parse_stored_hash(e) is None]
+    if missing:
+        for e in missing:
+            rep.fail("entry has no Hash field but other entries in this log do -- "
+                     "chain is incomplete: %s" % e["title"][:60])
+        return
+
+    oldest_first = list(reversed(entries))
+    prev = CHAIN_GENESIS
+    for e in oldest_first:
+        stored = parse_stored_hash(e)
+        computed = entry_hash(e, prev)
+        if stored != computed:
+            rep.fail(
+                "hash chain broken at '%s' -- stored hash doesn't match its recomputed "
+                "value; this entry or an earlier one was altered after being hashed"
+                % e["title"][:60]
+            )
+            return
+        prev = stored
+    rep.ok("hash chain verified across %d entries, unbroken from genesis to newest" % len(entries))
+
+
+def check_git_anchor(root, rep):
+    """Local, best-effort mitigation for the hash chain's real limitation
+    (see ARCHITECTURE.md, "What the hash chain does and doesn't prove"): the
+    chain alone proves internal self-consistency, not that no one who
+    understands the mechanism rewrote history. If this is a git repository,
+    the working copy of memory/decisions.md is compared against the version
+    at the last commit (HEAD). A change to anything other than new entries
+    added on top -- i.e. a historical entry's content differs from what was
+    last committed -- is flagged before it gets committed over.
+
+    This is entirely local: no push, no remote, no network call, same
+    dependency-free design as the rest of Molt. It catches the exact attack
+    this project's own security review demonstrated (tamper with an old
+    entry, strip its Hash field and every one after it, regenerate a fresh,
+    internally-consistent chain) as long as that tampering hasn't ALSO been
+    committed yet. Once a rewrite is committed, this check alone can't see
+    it; that needs a signing key or a remote with branch protection, both
+    outside what a local, dependency-free script can guarantee. Documented
+    honestly, not oversold. Opt-in: skipped entirely if this isn't a git
+    repository, git isn't installed, or decisions.md has no commit yet."""
+    rep.section("git anchor (local, best-effort -- not non-repudiation)")
+    if not os.path.isdir(os.path.join(root, ".git")):
+        print("  (not a git repository -- skipped, this check is opt-in)")
+        return
+    try:
+        proc = subprocess.run(
+            ["git", "show", "HEAD:memory/decisions.md"],
+            cwd=root, capture_output=True, text=True, timeout=5,
+        )
+    except (OSError, FileNotFoundError):
+        print("  (git binary not available -- skipped)")
+        return
+    except Exception as exc:  # noqa: BLE001 -- git invocation must never crash the audit
+        print("  (git invocation failed unexpectedly (%s) -- skipped)" % exc.__class__.__name__)
+        return
+    if proc.returncode != 0:
+        print("  (memory/decisions.md not yet committed, or repo has no commits -- nothing to compare)")
+        return
+    head_text = proc.stdout
+    dpath = os.path.join(root, "memory", "decisions.md")
+    try:
+        working_text = read(dpath)
+    except (OSError, UnicodeDecodeError):
+        return
+    if head_text == working_text:
+        rep.ok("memory/decisions.md matches the last git commit, no uncommitted rewrite")
+        return
+    head_entries = parse_decisions(head_text)
+    head_bodies = [e["body"] for e in head_entries]
+    if head_bodies and all(b in working_text for b in head_bodies):
+        rep.ok(
+            "uncommitted changes to memory/decisions.md are additive only (new "
+            "entries added on top) -- nothing from the last commit was altered"
+        )
+    else:
+        rep.fail(
+            "memory/decisions.md has uncommitted changes to content that already "
+            "existed at the last git commit -- review before committing; this is "
+            "exactly what a history rewrite looks like, even if it isn't one. "
+            "Commit legitimate new entries often so this check stays a tight anchor."
+        )
+
+
+GITIGNORE_MUST_STAY_TRACKED = ("CLAUDE.md", "AGENTS.md", "memory")
+LOCAL_APEX_FILES = ("CLAUDE.local.md", "AGENTS.local.md")
+
+
+def parse_gitignore_patterns(text):
+    return [s.strip() for s in text.splitlines() if s.strip() and not s.strip().startswith("#")]
+
+
+def gitignore_matches(patterns, name):
+    """Small, deliberately non-exhaustive gitignore matcher: exact match or a
+    simple glob, with or without a trailing slash. Good enough to catch the
+    two real mistakes this check exists for, not a full gitignore engine."""
+    target = name.rstrip("/")
+    for p in patterns:
+        p_clean = p.rstrip("/")
+        if p_clean == target or fnmatch.fnmatch(target, p_clean):
+            return True
+    return False
+
+
+def check_gitignore_sanity(root, rep):
+    """Two real mistakes with the shared-vs-personal apex convention, per the
+    2026 team-rules research this was built from: (1) CLAUDE.local.md exists
+    but isn't actually gitignored, personal preferences leak into the shared
+    repo; (2) CLAUDE.md, AGENTS.md, or memory/ get accidentally gitignored,
+    silently stopping the team's shared rules from syncing at all, described
+    as the single most common real mistake teams make with this pattern."""
+    rep.section("gitignore sanity")
+    gpath = os.path.join(root, ".gitignore")
+    # No .gitignore at all is NOT a reason to skip this check: a personal
+    # CLAUDE.local.md with zero protection is the worst version of the leak
+    # this check exists to catch, not a pass-through case.
+    patterns = parse_gitignore_patterns(read(gpath)) if os.path.isfile(gpath) else []
+
+    # this matcher (exact match or a simple glob) doesn't evaluate '!'
+    # negation lines at all -- a negation could silently re-include something
+    # meant to stay ignored, or the check above could misjudge a pattern that
+    # a real negation elsewhere modifies. Loud WARN rather than a wrong answer.
+    negations = [p for p in patterns if p.startswith("!")]
+    if negations:
+        rep.warn(
+            ".gitignore contains %d negation pattern(s) ('!...') -- this checker "
+            "does not evaluate negation rules, verify by hand that nothing shared "
+            "or personal is unintentionally re-included or excluded: %s"
+            % (len(negations), ", ".join(negations[:3]))
+        )
+
+    leaked_shared = [name for name in GITIGNORE_MUST_STAY_TRACKED if gitignore_matches(patterns, name)]
+    for name in leaked_shared:
+        rep.fail(
+            ".gitignore excludes '%s' -- this is shared team state and must stay tracked, "
+            "the far more common real mistake with this convention" % name
+        )
+
+    any_local = False
+    for local_name in LOCAL_APEX_FILES:
+        if os.path.isfile(os.path.join(root, local_name)):
+            any_local = True
+            if gitignore_matches(patterns, local_name):
+                rep.ok("%s exists and is correctly excluded by .gitignore" % local_name)
+            else:
+                rep.fail(
+                    "%s exists but is NOT excluded by .gitignore -- personal preferences "
+                    "could get committed and shared with the whole team" % local_name
+                )
+
+    if not leaked_shared and not any_local:
+        rep.ok(".gitignore doesn't exclude any shared apex file or memory/")
+
+
+RESERVED_ROOT_ONLY_TAGS = ("<never>", "<verification>", "<before_declaring_done>")
+NESTED_APEX_SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv"}
+
+
+def find_nested_apex_files(root):
+    """Yield (dirpath, filename) for every CLAUDE.md/AGENTS.md in a
+    subdirectory of root (never the root itself). Skips Molt's own root
+    memory/ *by exact path*, not by bare directory name, so a real domain
+    subdirectory that happens to also be named "memory" elsewhere in the
+    tree (e.g. packages/memory/, a caching subsystem) still gets checked.
+    Skipping by name alone was a real bug: it silently let a genuine
+    <never>-redeclaration violation inside such a directory go completely
+    unchecked, found via testing, not by inspection."""
+    root_memory = os.path.abspath(os.path.join(root, "memory"))
+    # followlinks=False (the default) already stops os.walk from descending
+    # INTO a symlinked directory; explicit here so that guarantee is never
+    # accidentally lost by a future edit, since walking outside the intended
+    # tree via a symlink is exactly how this check could be pointed at files
+    # it was never meant to read.
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        dirnames[:] = [
+            d for d in dirnames
+            if d not in NESTED_APEX_SKIP_DIRS
+            and not d.startswith(".")
+            and os.path.abspath(os.path.join(dirpath, d)) != root_memory
+        ]
+        if os.path.abspath(dirpath) == os.path.abspath(root):
+            continue
+        for fn in ("CLAUDE.md", "AGENTS.md"):
+            full = os.path.join(dirpath, fn)
+            if fn in filenames and not os.path.islink(full):
+                yield dirpath, fn
+
+
+def check_nested_apex_consistency(root, rep):
+    """Domain subdirectories in a monorepo (backend/, frontend/, a subsystem)
+    may keep their own AGENTS.md/CLAUDE.md, a real 2026 convention. Two
+    mechanical checks, since judging semantic contradiction would need an
+    LLM, not deterministic code: (1) a nested apex file must not redeclare
+    <never>, <verification>, or <before_declaring_done>, those are root-only
+    shared governance, same principle as CLAUDE.local.md not being allowed
+    to weaken them; (2) if a domain directory keeps both CLAUDE.md and
+    AGENTS.md, they must be byte-identical, the same mirror mechanism as the
+    root pair."""
+    rep.section("nested apex files (monorepo)")
+    found = list(find_nested_apex_files(root))
+    if not found:
+        print("  (no nested CLAUDE.md/AGENTS.md found -- optional, skipped)")
+        return
+
+    by_dir = {}
+    for dirpath, fn in found:
+        by_dir.setdefault(dirpath, []).append(fn)
+
+    any_fail = False
+    for dirpath, fns in sorted(by_dir.items()):
+        rel_dir = os.path.relpath(dirpath, root)
+        for fn in fns:
+            text = read(os.path.join(dirpath, fn))
+            # a tag only counts as "redeclared" if it's an actual section
+            # opening, alone on its own line, the way real tags are written
+            # in the root file. A prose mention like "see `<never>` in the
+            # root file" is not a redeclaration and must not be flagged;
+            # found as a false positive against this project's own real
+            # nested example the first time this check ran.
+            bad_tags = [
+                t for t in RESERVED_ROOT_ONLY_TAGS
+                if re.search(r"^\s*%s\s*$" % re.escape(t), text, re.M)
+            ]
+            if bad_tags:
+                any_fail = True
+                rep.fail(
+                    "%s/%s redeclares root-only tag(s) %s -- domain files may add "
+                    "sections, not redefine shared governance"
+                    % (rel_dir, fn, ", ".join(bad_tags))
+                )
+        if "CLAUDE.md" in fns and "AGENTS.md" in fns:
+            c_text = read(os.path.join(dirpath, "CLAUDE.md"))
+            a_text = read(os.path.join(dirpath, "AGENTS.md"))
+            if c_text == a_text:
+                rep.ok("%s: nested CLAUDE.md and AGENTS.md byte-match" % rel_dir)
+            else:
+                any_fail = True
+                rep.fail("%s: nested CLAUDE.md and AGENTS.md have drifted apart" % rel_dir)
+
+    if not any_fail:
+        rep.ok(
+            "%d nested apex file(s) across %d director%s, no reserved-tag violations"
+            % (len(found), len(by_dir), "y" if len(by_dir) == 1 else "ies")
+        )
+
+
+def check_agents_md(root, rep):
+    """AGENTS.md is the open, cross-tool convention (Cursor, Copilot, Codex
+    CLI, Gemini CLI, Aider, Windsurf, Zed all auto-load it) that Claude Code
+    and Cowork don't use, they read CLAUDE.md instead. Rather than maintain
+    two sets of rules, AGENTS.md is meant to be a byte-identical copy of
+    CLAUDE.md, the same mirror mechanism this script already uses for a
+    human-readable vault, applied to one file. This is what makes the
+    model-independence claim actually hold across tools, not just models."""
+    rep.section("cross-tool file (AGENTS.md)")
+    apath = os.path.join(root, "AGENTS.md")
+    cpath = os.path.join(root, "CLAUDE.md")
+    if not os.path.isfile(apath):
+        print("  (no AGENTS.md -- optional, skipped; add one for Cursor/Copilot/"
+              "Codex CLI/Gemini CLI/Aider/Windsurf/Zed compatibility)")
+        return
+    if not os.path.isfile(cpath):
+        rep.fail("AGENTS.md exists but CLAUDE.md is missing -- nothing for it to mirror")
+        return
+    try:
+        same = read(apath) == read(cpath)
+    except (UnicodeDecodeError, OSError) as exc:
+        rep.fail("could not compare AGENTS.md against CLAUDE.md: %s: %s"
+                 % (exc.__class__.__name__, str(exc)[:80]))
+        return
+    if same:
+        rep.ok("AGENTS.md byte-matches CLAUDE.md (cross-tool agents see the same rules)")
+    else:
+        rep.fail("AGENTS.md has drifted from CLAUDE.md -- regenerate it from CLAUDE.md, "
+                 "do not hand-edit either one out of sync")
 
 
 # ------------------------------------------------------------------ checks
@@ -168,7 +559,7 @@ def check_decisions_and_index(root, rep):
     for e in entries:
         missing = [f.rstrip(":") for f in REQUIRED_FIELDS if f not in [x for x in e["fields"]]]
         if missing:
-            rep.warn("entry '%s' missing field(s): %s" % (e["title"][:48], ", ".join(missing)))
+            rep.fail("entry '%s' missing field(s): %s" % (e["title"][:48], ", ".join(missing)))
     if entries and all(len(e["fields"]) == len(REQUIRED_FIELDS) for e in entries):
         rep.ok("all %d log entr%s well-formed (Decision/Reasoning/Reversible/Review)"
                % (len(entries), "y is" if len(entries) == 1 else "ies are"))
@@ -184,6 +575,39 @@ def check_decisions_and_index(root, rep):
             rep.fail("log not newest-first: %s appears above %s" % (older[0], newer[0]))
     elif dated:
         rep.ok("log is newest-first (%d dated entr%s)" % (len(dated), "y" if len(dated) == 1 else "ies"))
+
+    # same-day entries: date alone can't verify their relative order, so make
+    # that ambiguity visible rather than silently passing it as "in order"
+    date_counts = {}
+    for d, _, t in dated:
+        date_counts.setdefault(d, []).append(t)
+    dup_dates = sorted(d for d, titles in date_counts.items() if len(titles) > 1)
+    for d in dup_dates:
+        titles = date_counts[d]
+        rep.warn(
+            "%d entries share date %s: relative order between them can't be "
+            "verified by date alone -- %s"
+            % (len(titles), d, "; ".join(t[:40] for t in titles))
+        )
+
+    # duplicate entries: the same decision logged (or indexed) more than once.
+    # Checked before set-based matching below, because two identical entries
+    # collapse to one set member and would otherwise look like perfect
+    # agreement, exactly the gap an adversarial pass found: a real decision
+    # copy-pasted twice passed as clean.
+    from collections import Counter
+    log_key_counts = Counter((e["date"], norm(e["title"])) for e in entries)
+    # sort by (date-is-missing, date-or-empty, title) -- a plain sorted() on
+    # (None, str) tuples crashes, since None and str aren't comparable. Found
+    # by the adversarial benchmark: an entry with a malformed heading (no
+    # real date) triggered this the moment duplicate-checking was added.
+    for (d, t), n in sorted(log_key_counts.items(), key=lambda kv: (kv[0][0] is None, kv[0][0] or "", kv[0][1])):
+        if n > 1:
+            rep.fail("entry appears %d times in the log, should be once: [%s] %s" % (n, d, t[:60]))
+    idx_key_counts = Counter(rows)
+    for (d, t), n in sorted(idx_key_counts.items()):
+        if n > 1:
+            rep.fail("INDEX.md lists the same entry %d times, should be once: [%s] %s" % (n, d, t[:60]))
 
     # index <-> log set equality (by date + normalized title)
     log_keys = set((e["date"], norm(e["title"])) for e in entries)
@@ -202,15 +626,109 @@ def check_decisions_and_index(root, rep):
         rep.ok("index matches the log exactly (%d entr%s, no phantoms, no gaps)"
                % (len(rows), "y" if len(rows) == 1 else "ies"))
 
-    # append anchor
-    if APPEND_ANCHOR.lower() in dtext.lower():
-        rep.ok("append-only anchor present")
+    # append anchor: must exist, AND nothing real may follow it. Checking only
+    # for presence, not position, was itself a gap: an entry smuggled in below
+    # the "add new entries above this line" marker parsed and indexed fine,
+    # since nothing tied the anchor to where the file actually ends.
+    anchor_idx = dtext.lower().find(APPEND_ANCHOR.lower())
+    if anchor_idx == -1:
+        rep.fail("append-only anchor missing -- add '<!-- %s ... -->' to guard ordering" % APPEND_ANCHOR)
     else:
-        rep.warn("append-only anchor missing -- add '<!-- %s ... -->' to guard ordering" % APPEND_ANCHOR)
+        # find the actual close of the anchor's own HTML comment, not just the
+        # end of the search phrase, otherwise the rest of the anchor's own
+        # comment text (". Keep the oldest at the bottom. -->") gets mistaken
+        # for smuggled content below it.
+        close_idx = dtext.find("-->", anchor_idx)
+        scan_from = close_idx + 3 if close_idx != -1 else anchor_idx + len(APPEND_ANCHOR)
+        after_anchor = dtext[scan_from:].strip()
+        if after_anchor:
+            rep.fail(
+                "content found BELOW the append-only anchor -- entries must be added "
+                "above '%s', not after it: %r" % (APPEND_ANCHOR, after_anchor[:80])
+            )
+        else:
+            rep.ok("append-only anchor present, nothing follows it")
 
     # leftover placeholder
     if PLACEHOLDER_DATE in dtext or PLACEHOLDER_DATE in itext:
         rep.warn("example placeholder (%s) still present -- replace with a real first entry" % PLACEHOLDER_DATE)
+
+
+REQUIRED_INDEX_SECTIONS = ("handoffs/", "domain buckets")
+
+
+def check_index_sections(root, rep):
+    rep.section("index structural sections")
+    ipath = os.path.join(root, "memory", "INDEX.md")
+    if not os.path.isfile(ipath):
+        return
+    itext = read(ipath)
+    headings = set(
+        m.group(1).strip().lower() for m in re.finditer(r"^##\s+(.*\S)\s*$", itext, re.M)
+    )
+    for name in REQUIRED_INDEX_SECTIONS:
+        if name.lower() in headings:
+            rep.ok("INDEX.md still documents '%s'" % name)
+        else:
+            rep.warn("INDEX.md is missing its '%s' section -- was it deleted or renamed?" % name)
+
+
+def parse_handoff_rows(text):
+    """Rows in the '## handoffs/' table. Convention: | Date | File | ~tokens |,
+    where File is the exact filename in memory/handoffs/."""
+    rows = []
+    in_section = False
+    for line in text.splitlines():
+        if re.match(r"^##\s+handoffs/?\s*$", line.strip(), re.I):
+            in_section = True
+            continue
+        if in_section and re.match(r"^##\s+", line):
+            break
+        if not in_section:
+            continue
+        s = line.strip()
+        if not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        first = cells[0]
+        if ISO_DATE.match(first) or first == PLACEHOLDER_DATE:
+            rows.append(cells[1])
+    return rows
+
+
+def check_handoffs(root, rep):
+    rep.section("handoffs (structural check)")
+    hdir = os.path.join(root, "memory", "handoffs")
+    ipath = os.path.join(root, "memory", "INDEX.md")
+    if not os.path.isdir(hdir):
+        print("  (no memory/handoffs/ directory -- skipped)")
+        return
+    real_files = sorted(
+        fn for fn in os.listdir(hdir)
+        if fn.lower() != "template.md"
+        and not fn.startswith(".")
+        and os.path.isfile(os.path.join(hdir, fn))
+    )
+    if not real_files:
+        print("  (no real handoff files yet, only TEMPLATE.md or empty -- skipped)")
+        return
+    if not os.path.isfile(ipath):
+        rep.fail("real handoff files exist but memory/INDEX.md is missing")
+        return
+    indexed = parse_handoff_rows(read(ipath))
+    real_set, idx_set = set(real_files), set(indexed)
+    phantom = idx_set - real_set   # indexed, file doesn't exist
+    missing = real_set - idx_set   # real file, not indexed
+    if phantom:
+        for f in sorted(phantom):
+            rep.fail("INDEX.md handoffs table references a file that doesn't exist: %s" % f)
+    if missing:
+        for f in sorted(missing):
+            rep.fail("real handoff file missing from INDEX.md's handoffs table: %s" % f)
+    if not phantom and not missing:
+        rep.ok("all %d real handoff file(s) are indexed, no phantoms, no gaps" % len(real_files))
 
 
 def find_mirror_dir(root, explicit):
@@ -232,17 +750,33 @@ def check_mirror(root, rep, explicit):
     rel_mirror = os.path.relpath(mdir, root)
     drift = 0
     checked = 0
-    for dirpath, _dirs, files in os.walk(mdir):
+    for dirpath, _dirs, files in os.walk(mdir, followlinks=False):
         for fn in files:
             mpath = os.path.join(dirpath, fn)
             rel = os.path.relpath(mpath, mdir)
+            if os.path.islink(mpath):
+                rep.warn("mirror file is a symlink, skipped (could point outside the "
+                         "intended tree): %s/%s" % (rel_mirror, rel))
+                continue
             src = os.path.join(root, rel)
             checked += 1
             if not os.path.isfile(src):
                 rep.fail("mirror has a file with no source counterpart: %s/%s" % (rel_mirror, rel))
                 drift += 1
                 continue
-            if read(src) != read(mpath):
+            try:
+                same = read(src) == read(mpath)
+            except (UnicodeDecodeError, OSError) as exc:
+                # a mirror directory can hold anything; something that isn't
+                # plain UTF-8 text (a binary file, a corrupt save) must not be
+                # able to crash the whole audit. Report it as drift, not a
+                # traceback. Found by testing common real-world breakage, not
+                # a deliberate attack.
+                rep.fail("could not compare mirror file against its source: %s (%s: %s)"
+                         % (rel, exc.__class__.__name__, str(exc)[:80]))
+                drift += 1
+                continue
+            if not same:
                 rep.fail("mirror OUT OF SYNC with source: %s (run your sync, do not hand-edit)" % rel)
                 drift += 1
     if checked == 0:
@@ -285,9 +819,30 @@ def main(argv):
         print("\n" + rep._c("31", "Not a Molt root. Nothing else to check."))
         return 1
 
-    check_apex_budget(root, rep)
-    check_decisions_and_index(root, rep)
-    check_mirror(root, rep, explicit_mirror)
+    # Every check below reads files this script doesn't control the contents
+    # of. A tool whose entire job is to always deliver a verdict must not be
+    # able to crash into a raw traceback instead of one, so any unexpected
+    # failure inside a single check is caught, reported as drift, and the
+    # remaining checks still run.
+    checks = (
+        check_apex_budget,
+        check_agents_md,
+        check_gitignore_sanity,
+        check_nested_apex_consistency,
+        check_decisions_and_index,
+        check_hash_chain,
+        check_git_anchor,
+        check_index_sections,
+        check_handoffs,
+        lambda r, rp: check_mirror(r, rp, explicit_mirror),
+    )
+    for check in checks:
+        try:
+            check(root, rep)
+        except Exception as exc:  # noqa: BLE001 -- deliberately broad, see comment above
+            rep.fail("%s crashed instead of returning a verdict: %s: %s"
+                     % (check.__name__ if hasattr(check, "__name__") else "a check",
+                        exc.__class__.__name__, str(exc)[:120]))
 
     print("\n" + "-" * 52)
     if rep.fails:

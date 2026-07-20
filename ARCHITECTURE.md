@@ -25,6 +25,92 @@ That guarantee is not a promise, it's a script. `molt-verify.py` mechanically ch
 
 Don't read `memory/decisions.md` top to bottom by default. Read `memory/INDEX.md` first, a table of each entry's date, type, title, and approximate token cost, then open only the one entry the task needs. At a handful of entries this barely matters; past 15-20 it's the difference between a cheap lookup and re-reading a growing file every session. Re-check the tradeoff as entries accumulate; don't keep the index out of habit if reading the whole log is genuinely still cheaper.
 
+## Tool independence, concretely
+
+Model independence and tool independence are different problems that look
+similar. A model can read `CLAUDE.md` regardless of which model it is; the
+open question was whether the *tool* around that model auto-loads a file with
+that exact name. Claude Code and Cowork do. Cursor, GitHub Copilot, Codex CLI,
+Gemini CLI, Aider, Windsurf, and Zed instead converged on `AGENTS.md` as the
+open cross-tool convention as of 2026. Rather than keep two sets of rules that
+can quietly drift, `AGENTS.md` is a byte-identical copy of `CLAUDE.md`, using
+the exact mechanism the mirror check already proved: `molt-verify.py` fails if
+the two files stop matching. Edit `CLAUDE.md`; regenerate `AGENTS.md` from it,
+never the reverse.
+
+## Nested apex files, for monorepos
+
+A domain subdirectory (`backend/`, `frontend/`, a subsystem) may keep its own
+`CLAUDE.md`/`AGENTS.md` for rules specific to that area, a real 2026 monorepo
+convention. `molt-verify.py` can't judge semantic contradiction between a
+nested file and the root, that would need an LLM, not deterministic code, so
+it checks two mechanical things instead: a nested file must never redeclare
+`<never>`, `<verification>`, or `<before_declaring_done>` as an actual section
+(mentioning them in prose is fine; redefining them isn't), and if a domain
+directory keeps both `CLAUDE.md` and `AGENTS.md`, they must byte-match each
+other, the same mirror mechanism used at the root. `benchmarks/CLAUDE.md` in
+this project is a real, working example, not just documentation of the idea.
+
+## What TRUSTWORTHY does and doesn't mean
+
+`molt-verify.py`'s "TRUSTWORTHY" verdict means structural integrity: the
+index agrees with the log, the log is well-formed and append-only, any
+mirror byte-matches its source, and (if adopted) the hash chain is unbroken.
+It does not mean the content is honest, accurate, or the right decision. A
+human can type a real lie into a well-formed, internally consistent entry,
+and every check here will still pass, because none of them can judge whether
+a sentence is true, only whether the files agree with each other and haven't
+been silently altered by a mechanism this script knows how to check. Trust
+the mechanism; still read the content with judgment.
+
+## What the hash chain does and doesn't prove
+
+The hash chain (`**Hash:** sha256(entry + previous entry's hash)`) proves the
+log is internally self-consistent: if every stored hash matches its
+recomputed value from genesis forward, no entry was altered *after being
+hashed*, without needing a mirror kept elsewhere. It does not, by itself,
+prove non-repudiation. This project's own security review demonstrated the
+gap directly: tamper with an old entry, strip its Hash field and every one
+after it, then run `molt-chain-append.py` again. The tool fills in missing
+hashes, so it produces a fresh, fully self-consistent chain, and
+`molt-verify.py` reports it TRUSTWORTHY. The hash chain alone cannot tell the
+difference between "this log has always been this way" and "someone with
+the same tools rewrote it and regenerated a matching chain," because both
+produce an identical, internally valid result. A self-contained local chain
+with no anchor outside the log-writer's own control cannot close this gap;
+that needs a signing key the day-to-day writer doesn't hold, or a remote
+with branch protection the writer can't override. Neither fits a
+dependency-free, local-only tool, and this project deliberately keeps that
+tradeoff rather than quietly adding a signing service or a network call to
+paper over it.
+
+What `check_git_anchor` adds, honestly: if the Molt root is a git
+repository, it compares the working copy of `memory/decisions.md` against
+the version at the last commit (`HEAD`). A change to anything other than
+new entries added on top is flagged before it can be committed over. This
+is local only, no push, no remote, no network call, same dependency-free
+design as everything else here. It catches the exact laundering attack
+above as long as the rewrite hasn't already been committed; once it has,
+`check_git_anchor` sees the committed (laundered) version as the new normal
+and can't tell. Commit real entries often, so the window a rewrite can hide
+in stays small. This is a mitigation, not a fix; the honest boundary is
+stated here rather than implied away.
+
+## Removing sensitive content without lying about it
+
+An append-only, hash-chained log has no built-in way to remove content that
+should never have been logged (PII, a leaked secret) short of two bad
+options: leaving it there forever, or hand-editing history, which
+`molt-verify.py` would then correctly flag as tampering. `molt-redact.py` is
+the sanctioned third option: it replaces one entry's four required fields
+with a fixed, visible placeholder, keeps that entry's heading exactly as it
+was, appends a new top entry documenting the redaction itself in plain text
+(what, when, why), and regenerates the hash chain from the redacted entry
+forward, because that content genuinely, legitimately changed. Anyone
+reading the log, or running `molt-verify.py`, can see a redaction happened,
+even if not what was removed. Log the redaction as a real `INDEX.md` row
+like any other entry.
+
 ## Model independence, concretely
 
 Every rule in `CLAUDE.md` is checkable by inspection: a model either follows it or doesn't, with no dependence on that model's personality. No rule says "respond the way you normally would." No fact from a past session is assumed remembered, because a new model has no access to a prior model's history; anything worth remembering is in `memory/`. The never-list bans inventing facts to fill a gap, which is the exact failure that shows up when an unfamiliar model tries to sound like it remembers something it doesn't.

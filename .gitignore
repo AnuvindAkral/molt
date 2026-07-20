@@ -10,3 +10,10 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Personal apex overrides -- never shared, never committed.
+# CLAUDE.md and AGENTS.md are the team's shared rules and must stay tracked;
+# only the .local.md layer on top of them is personal. See CLAUDE.md's
+# <personal_layer> section and molt-verify.py's check_gitignore_sanity.
+CLAUDE.local.md
+AGENTS.local.md

@@ -1,0 +1,24 @@
+# CLAUDE.local.md.example
+> Copy this file to CLAUDE.local.md, edit your copy, never commit it.
+> CLAUDE.local.md is gitignored by convention (see .gitignore).
+
+This layer may only add personal *preference*: tone, verbosity, formatting
+taste, which protocol you personally default to when more than one applies.
+
+It may NEVER weaken anything in the shared CLAUDE.md, specifically:
+- the `<never>` list (fabrication, silent reinterpretation, rewriting a
+  decisions.md entry)
+- `<verification>` (running molt-verify.py before declaring work done)
+- `<before_declaring_done>`'s checklist
+
+If a personal preference and a shared rule conflict, the shared rule wins.
+This file exists to make a team's shared judgment survive a model swap
+*and* survive different people on the same team, without either person's
+taste leaking into the file everyone else reads.
+
+<example_personal_preferences>
+- I prefer terser summaries than the team default; skip the "why this
+  matters" framing sentence at the end of routine updates.
+- Default to showing full diffs for anything touching molt-verify.py itself,
+  even small ones; I want to see the exact change, not a summary of it.
+</example_personal_preferences>

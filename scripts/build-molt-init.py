@@ -36,6 +36,8 @@ EMBED_FILES = {
     "MOLT_REDACT_PY": "molt-redact.py",
     "PRE_COMMIT_HOOK": os.path.join(".githooks", "pre-commit"),
     "CI_WORKFLOW_YML": os.path.join(".github", "workflows", "molt-verify.yml"),
+    "SESSION_START_HOOK": os.path.join(".claude", "hooks", "molt-session-start.sh"),
+    "SESSION_END_HOOK": os.path.join(".claude", "hooks", "molt-session-end.sh"),
 }
 
 MOLT_INIT_PATH = os.path.join(ROOT, "molt-init.py")

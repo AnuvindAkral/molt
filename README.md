@@ -81,6 +81,8 @@ your-project/
 ├── molt-redact.py                   the proper way to remove something sensitive
 ├── .githooks/pre-commit             stops a bad commit before it happens
 ├── .github/workflows/molt-verify.yml   stops a bad pull request before it merges
+├── .claude/hooks/                   Claude Code only: auto-runs the checker each session
+├── .claude/settings.json            registers those two hooks, merges into yours if you have one
 └── memory/
     ├── INDEX.md                     a short table of what exists, cheap to read
     ├── decisions.md                 the real decision log, one honest reason per entry
@@ -99,6 +101,8 @@ This isn't just claimed, it's tested: a permanent set of **43 simulated attacks*
 git config core.hooksPath .githooks   # one-time, blocks a bad commit locally
 # the GitHub Actions workflow already blocks a bad pull request automatically
 ```
+
+**If you use Claude Code specifically**, `molt-init.py` also registers a `SessionStart` and a `SessionEnd` hook in `.claude/settings.json`, so `molt-verify.py` runs automatically at the beginning and end of every session, not only at commit time. If it finds drift, Claude sees a warning before you even ask it anything. This is Claude Code's own hook mechanism, so it's specific to Claude Code, it does nothing for Cursor, Copilot, or any other tool; the pre-commit hook and CI workflow above are the parts that actually work everywhere. It never overwrites hooks you already have configured, it merges in alongside them.
 
 ## Why it works the way it does
 

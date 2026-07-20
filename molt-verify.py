@@ -177,45 +177,74 @@ def parse_decisions(text):
     return entries
 
 
-def parse_index_rows(text):
-    """Return list of (date, title) from any markdown table rows whose first
-    cell is a date (ISO or the YYYY-MM-DD placeholder)."""
+def parse_index_table(text):
+    """Parse every markdown table in an INDEX.md-shaped file into a list of
+    row dicts keyed by that table's own header names (e.g. 'Date', 'Type',
+    'Title', '~tokens', 'Gist'), for any pipe-line whose first cell is a real
+    ISO date or the YYYY-MM-DD placeholder. Column-NAME driven when a header
+    can be matched, not positional: an earlier version hardcoded
+    cells[2]/cells[3], so adding an optional column (like 'Gist', a one-line
+    summary that lets most lookups skip opening decisions.md at all) would
+    have silently broken title and token parsing instead of just working.
+
+    A date-like row with no matching header in scope (wrong column count, or
+    genuinely outside any recognized table, e.g. pasted after prose with no
+    blank-line table structure around it) still produces a minimal
+    {'Date', 'Title'} guess via positional fallback (title = 3rd cell),
+    rather than being silently dropped. This isn't cosmetic: an earlier,
+    stricter version of this parser required strict header adjacency, and a
+    phantom row appended past the end of the real table (still date-shaped,
+    still misleading to a reader) went completely unrecognized as a result,
+    a real regression found by this project's own adversarial benchmark
+    catching itself. The floor this project starts from is 'find any
+    date-shaped row anywhere', richer parsing is a bonus on top of that
+    floor, never a replacement for it."""
+    lines = text.splitlines()
+    header = None
+    prev_cells = None
     rows = []
-    for line in text.splitlines():
+    for line in lines:
         s = line.strip()
         if not s.startswith("|"):
+            prev_cells = None
             continue
         cells = [c.strip() for c in s.strip("|").split("|")]
-        if len(cells) < 3:
+        if prev_cells is not None and len(cells) == len(prev_cells) and all(
+            re.match(r"^:?-+:?$", c) for c in cells
+        ):
+            header = prev_cells
+            prev_cells = None
             continue
         first = cells[0]
         if ISO_DATE.match(first) or first == PLACEHOLDER_DATE:
-            # title is the last non-token cell before an approx-tokens column;
-            # convention: | Date | Type | Title | ~tokens |
-            title = cells[2] if len(cells) >= 4 else cells[-1]
-            rows.append((first, norm(title)))
+            if header is not None and len(cells) == len(header):
+                rows.append(dict(zip(header, cells)))
+            else:
+                rows.append({"Date": first, "Title": cells[2] if len(cells) >= 3 else cells[-1]})
+        prev_cells = cells
     return rows
 
 
+def parse_index_rows(text):
+    """Return list of (date, title) for every decisions-table row (any row
+    with a 'Title' column), regardless of what other columns exist."""
+    return [
+        (row["Date"], norm(row["Title"]))
+        for row in parse_index_table(text)
+        if "Title" in row
+    ]
+
+
 def parse_index_token_estimates(text):
-    """Return {(date, title): claimed_tokens_int} for rows whose ~tokens cell
-    parses as a number (with or without a leading '~'). Convention: | Date |
-    Type | Title | ~tokens |."""
+    """Return {(date, title): claimed_tokens_int} for decisions-table rows
+    whose '~tokens' cell parses as a number (with or without a leading '~')."""
     out = {}
-    for line in text.splitlines():
-        s = line.strip()
-        if not s.startswith("|"):
+    for row in parse_index_table(text):
+        if "Title" not in row or "~tokens" not in row:
             continue
-        cells = [c.strip() for c in s.strip("|").split("|")]
-        if len(cells) < 4:
-            continue
-        first = cells[0]
-        if not (ISO_DATE.match(first) or first == PLACEHOLDER_DATE):
-            continue
-        title = norm(cells[2])
-        m = re.match(r"~?\s*([0-9]+)", cells[3])
+        m = re.match(r"~?\s*([0-9]+)", row["~tokens"])
         if m:
-            out[(first, title)] = int(m.group(1))
+            out[(row["Date"], norm(row["Title"]))] = int(m.group(1))
     return out
 
 
@@ -284,9 +313,32 @@ def check_token_efficiency(root, rep):
             "a single lookup stops being cheap once entries grow like this"
             % (title, actual, ENTRY_TOKEN_BUDGET)
         )
-    if not drifted and not oversized:
-        rep.ok("all %d entr%s' index estimates are accurate and within the verbosity budget"
-               % (len(entries), "y" if len(entries) == 1 else "ies"))
+
+    # Gist column (optional): a one-line summary short enough that most
+    # lookups ("what did we decide about X") resolve from INDEX.md alone,
+    # without opening the full entry. This is the single biggest lever real
+    # agent-memory systems use for token efficiency (an index hit answers
+    # most queries; a full fetch is the rare exception), so it's checked with
+    # the same discipline as everything else here: opt-in, and once adopted,
+    # an empty cell is a gap, not a style choice.
+    index_rows = parse_index_table(read(ipath))
+    has_gist_column = any("Gist" in row for row in index_rows)
+    empty_gist = []
+    if has_gist_column:
+        for row in index_rows:
+            if "Title" in row and "Gist" in row and not row["Gist"].strip():
+                empty_gist.append(row["Title"][:55])
+    for title in empty_gist:
+        rep.warn(
+            "INDEX.md has a Gist column but the row for '%s' leaves it empty -- "
+            "an empty gist forces opening the full entry for something a one-line "
+            "summary could have answered" % title
+        )
+
+    if not drifted and not oversized and not empty_gist:
+        rep.ok("all %d entr%s' index estimates are accurate and within the verbosity budget%s"
+               % (len(entries), "y" if len(entries) == 1 else "ies",
+                  ", every Gist is filled in" if has_gist_column else ""))
 
 
 def canonical_entry_text(e):
@@ -795,6 +847,17 @@ def parse_handoff_rows(text):
 
 
 def check_handoffs(root, rep):
+    """A real, pre-existing gap, found only after parse_index_rows stopped
+    being scope-agnostic (see parse_index_table): this check used to bail
+    out entirely the moment memory/handoffs/ had zero real files, before ever
+    looking at whether INDEX.md's handoffs table claimed any anyway. A
+    phantom row in that table (a file that was never real) went unchecked on
+    its own terms in exactly that case, previously only caught by accident,
+    because the old date-shaped-row parser didn't respect table boundaries
+    and mistakenly attributed a handoffs-table phantom row to the decisions
+    table's own phantom-detection instead. Now checked directly: phantom
+    rows are flagged whether or not any real file exists; only a genuinely
+    empty INDEX.md table with zero real files has nothing to report."""
     rep.section("handoffs (structural check)")
     hdir = os.path.join(root, "memory", "handoffs")
     ipath = os.path.join(root, "memory", "INDEX.md")
@@ -807,13 +870,16 @@ def check_handoffs(root, rep):
         and not fn.startswith(".")
         and os.path.isfile(os.path.join(hdir, fn))
     )
-    if not real_files:
-        print("  (no real handoff files yet, only TEMPLATE.md or empty -- skipped)")
-        return
     if not os.path.isfile(ipath):
-        rep.fail("real handoff files exist but memory/INDEX.md is missing")
+        if real_files:
+            rep.fail("real handoff files exist but memory/INDEX.md is missing")
+        else:
+            print("  (no real handoff files and no memory/INDEX.md -- skipped)")
         return
     indexed = parse_handoff_rows(read(ipath))
+    if not real_files and not indexed:
+        print("  (no real handoff files yet, and INDEX.md's handoffs table is empty -- skipped)")
+        return
     real_set, idx_set = set(real_files), set(indexed)
     phantom = idx_set - real_set   # indexed, file doesn't exist
     missing = real_set - idx_set   # real file, not indexed

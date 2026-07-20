@@ -558,6 +558,54 @@ def inject_oversized_entry(root):
     open(p, "w", encoding="utf-8").write(text2)
 
 
+def inject_index_gist_column_correct(root):
+    """Not a corruption: INDEX.md adds an optional 'Gist' column (a one-line
+    summary letting most lookups skip opening decisions.md entirely), filled
+    in for every row. Should pass clean, proving the good path works, and
+    that adding a column doesn't break Title/tokens parsing (which used to
+    be positional, cells[2]/cells[3], before it became column-name driven)."""
+    p = os.path.join(root, "memory", "INDEX.md")
+    text = open(p, encoding="utf-8").read()
+    old_header = "| Date | Type | Title | ~tokens |\n|---|---|---|---|\n"
+    assert old_header in text, "adversarial injector itself is broken: index header not found"
+    new_header = "| Date | Type | Title | Gist | ~tokens |\n|---|---|---|---|---|\n"
+    text2 = text.replace(old_header, new_header, 1)
+    # rewrite every existing data row to insert a real Gist cell before ~tokens
+    text2 = re.sub(
+        r"^\| (\S+) \| build \| ([^|]+) \| (~[0-9]+) \|$",
+        r"| \1 | build | \2 | A real one-line gist for this entry. | \3 |",
+        text2, flags=re.M,
+    )
+    assert text2 != text
+    open(p, "w", encoding="utf-8").write(text2)
+
+
+def inject_index_gist_column_empty(root):
+    """INDEX.md has a Gist column, but one row leaves it blank. The whole
+    point of the column is that a lookup can stop at the index; an empty
+    cell silently forces opening the full entry, which is worth a WARN."""
+    p = os.path.join(root, "memory", "INDEX.md")
+    text = open(p, encoding="utf-8").read()
+    old_header = "| Date | Type | Title | ~tokens |\n|---|---|---|---|\n"
+    assert old_header in text, "adversarial injector itself is broken: index header not found"
+    new_header = "| Date | Type | Title | Gist | ~tokens |\n|---|---|---|---|---|\n"
+    text2 = text.replace(old_header, new_header, 1)
+    rows = re.findall(r"^\| (\S+) \| build \| ([^|]+) \| (~[0-9]+) \|$", text2, flags=re.M)
+    assert rows, "adversarial injector itself is broken: no data rows found"
+    first = rows[0]
+    old_row = "| %s | build | %s | %s |" % first
+    filled_row = "| %s | build | %s |  | %s |" % first  # empty gist cell
+    text2 = text2.replace(old_row, filled_row, 1)
+    # fill in every OTHER row so only the first one is left empty
+    text2 = re.sub(
+        r"^\| (\S+) \| build \| ([^|]+) \| (~[0-9]+) \|$",
+        r"| \1 | build | \2 | A real one-line gist for this entry. | \3 |",
+        text2, flags=re.M,
+    )
+    assert text2 != text
+    open(p, "w", encoding="utf-8").write(text2)
+
+
 def inject_gitignore_negation_pattern(root):
     """.gitignore contains a '!' negation pattern, which check_gitignore_sanity
     deliberately does not evaluate (a real gitignore engine is a large
@@ -622,6 +670,8 @@ CASES = [
     ("gitignore_negation_pattern", inject_gitignore_negation_pattern, 0, "TRUSTWORTHY (with notes)", CASES_PLAIN),
     ("index_token_drift", inject_index_token_drift, 0, "TRUSTWORTHY (with notes)", CASES_PLAIN),
     ("oversized_entry", inject_oversized_entry, 0, "TRUSTWORTHY (with notes)", CASES_PLAIN),
+    ("index_gist_column_correct", inject_index_gist_column_correct, 0, "TRUSTWORTHY", CASES_PLAIN),
+    ("index_gist_column_empty", inject_index_gist_column_empty, 0, "TRUSTWORTHY (with notes)", CASES_PLAIN),
     ("git_anchor_control_committed", None, 0, "TRUSTWORTHY", CASES_CHAINED_GIT),
     ("git_anchor_laundering_attack", inject_git_anchor_laundering_attack, 1, "DRIFT DETECTED", CASES_CHAINED_GIT),
     ("git_anchor_legitimate_addition", inject_git_anchor_legitimate_addition, 0, "TRUSTWORTHY", CASES_CHAINED_GIT),

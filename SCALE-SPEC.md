@@ -130,3 +130,33 @@ Items 1-4 (sharded log, deterministic recall index, digest layer, assisted
 drafting) remain design-only. Per the review note on the fix entry in
 `memory/decisions.md`, none of them get built until the benchmark or a real
 entry count actually forces it, not before.
+
+## What Mem0 and Letta do, and why Molt doesn't copy it
+
+A later pass researched the current state of agent-memory token efficiency
+specifically (Mem0, Letta/MemGPT, Zep). Their headline numbers are real: Mem0
+reports ~1.8K tokens per query versus ~26K for full-context recall on the
+LOCOMO benchmark, largely by compressing and re-embedding memories into a
+vector store at write time, then doing semantic (approximate) retrieval at
+read time. Two things follow from that architecture, and both conflict with
+what Molt is actually for.
+
+First, an embedding-and-vector-store layer is a dependency, and a service:
+something to install, run, and keep available, which is the exact tradeoff
+Molt's zero-dependency, no-network design exists to avoid. Second, and more
+fundamentally, semantic retrieval is approximate by construction: an
+embedding similarity search can plausibly return the "closest" memory
+instead of the exact one, which is fine for a chatbot's fuzzy recall and
+disqualifying for a system whose entire premise is "this proves it isn't
+lying to you." Molt's exact-match, deterministic lookup (a specific dated
+entry, or nothing) is slower to fuzzy-search at genuine scale, and that's
+the trade this project keeps making on purpose, the same one named in
+"Honest gap this doesn't close" above.
+
+What WAS worth adopting, and did get built (see the token-efficiency fix in
+`memory/decisions.md`): the industry's real, transferable insight isn't the
+embeddings, it's "compress at write time, verify the compression is honest,
+and let most lookups resolve from a cheap index without ever fetching the
+full record." `molt-verify.py`'s `check_token_efficiency` and INDEX.md's
+`Gist` column are exactly that principle, implemented with a word-count
+heuristic instead of a vector index, zero dependencies, no service to run.

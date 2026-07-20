@@ -9,6 +9,7 @@ reading `decisions.md` top to bottom by default. (Progressive disclosure; see
 
 | Date | Type | Title | Gist | ~tokens |
 |---|---|---|---|---|
+| 2026-07-20 | fix | Fixed a placeholder-detection false positive, found by this project's own log tripping its own check | The "YYYY-MM-DD still present" check false-positived on prose mentioning the string; fixed to check real entry/row dates only, not a blind substring search. | ~285 |
 | 2026-07-20 | build | Built molt-init.py, and closed the concurrent-edit gap with union merge + a conflict-marker check | One-command scaffold for new adopters (fixed a real AGENTS.md drift bug found while testing it); union-merge for concurrent decisions.md edits + a conflict-marker check that runs first. | ~570 |
 | 2026-07-20 | build | Made verification mandatory (pre-commit hook + CI) and fixed a real nested-repo bug in the git anchor | Added .githooks/pre-commit + GitHub Actions blocking drift; fixed check_git_anchor silently no-oping when Molt's root isn't the git top-level. | ~520 |
 | 2026-07-20 | build | Researched real agent-memory token-efficiency practice and added a Gist column, deliberately declining vector search | Added an INDEX.md Gist column so most lookups skip decisions.md entirely; declined embeddings/vector search as a dependency that also isn't exact. Fixed 2 masked check gaps found along the way. | ~510 |

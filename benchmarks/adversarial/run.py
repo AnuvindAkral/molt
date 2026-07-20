@@ -642,6 +642,27 @@ def inject_index_gist_column_empty(root):
     open(p, "w", encoding="utf-8").write(text2)
 
 
+def inject_placeholder_mentioned_in_prose(root):
+    """Not a corruption: an entry's own Decision text mentions the literal
+    string 'YYYY-MM-DD' in prose (describing the placeholder convention
+    itself), without any real entry or index row actually using it as a
+    date. Should pass clean. A blind substring search for PLACEHOLDER_DATE
+    across the whole file used to false-positive on exactly this, found by
+    this project's own log tripping its own check after a decision entry
+    described molt-init.py's starter template."""
+    p = os.path.join(root, "memory", "decisions.md")
+    text = open(p, encoding="utf-8").read()
+    needle = "Synthetic decision body number 0 for benchmark purposes, kept short."
+    assert needle in text, "adversarial injector itself is broken: needle not found"
+    text2 = text.replace(
+        needle,
+        needle + " Mentions the YYYY-MM-DD placeholder convention in prose only, not as a real date.",
+        1,
+    )
+    assert text2 != text
+    open(p, "w", encoding="utf-8").write(text2)
+
+
 def inject_unresolved_merge_conflict_marker(root):
     """A botched or half-finished merge resolution leaves a literal git
     conflict marker in memory/decisions.md. Must fail loud and first, before
@@ -729,6 +750,7 @@ CASES = [
     ("git_anchor_nested_root_control", None, 0, "TRUSTWORTHY", CASES_NESTED_GIT, NESTED_GIT_SUBPATH),
     ("git_anchor_nested_root_laundering_attack", inject_git_anchor_laundering_attack_nested, 1, "DRIFT DETECTED", CASES_NESTED_GIT, NESTED_GIT_SUBPATH),
     ("unresolved_merge_conflict_marker", inject_unresolved_merge_conflict_marker, 1, "DRIFT DETECTED", CASES_PLAIN),
+    ("placeholder_mentioned_in_prose", inject_placeholder_mentioned_in_prose, 0, "TRUSTWORTHY", CASES_PLAIN),
 ]
 
 

@@ -870,8 +870,17 @@ def check_decisions_and_index(root, rep):
         else:
             rep.ok("append-only anchor present, nothing follows it")
 
-    # leftover placeholder
-    if PLACEHOLDER_DATE in dtext or PLACEHOLDER_DATE in itext:
+    # leftover placeholder: check whether a REAL entry or index row's date is
+    # literally the placeholder, not a blind substring search across the
+    # whole file. A raw "PLACEHOLDER_DATE in dtext" check false-positives
+    # the moment any entry's own prose merely MENTIONS "YYYY-MM-DD" (for
+    # example, describing the placeholder convention itself, exactly what
+    # happened here) -- found by this project's own log tripping its own
+    # check, the same shape of bug as the nested-apex reserved-tag false
+    # positive fixed earlier.
+    placeholder_entry = any(e["date"] == PLACEHOLDER_DATE for e in entries)
+    placeholder_row = any(d == PLACEHOLDER_DATE for d, _ in rows)
+    if placeholder_entry or placeholder_row:
         rep.warn("example placeholder (%s) still present -- replace with a real first entry" % PLACEHOLDER_DATE)
 
 
